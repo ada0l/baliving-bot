@@ -272,27 +272,18 @@ export default class MessageHandler extends BaseHandler {
                     nextAction: Actions.ReadAreas,
                     isTrial: databaseUser.get('TRIAL') === TRIAL,
                 })
-                let keyboard: any = []
-                areas[user.locale].forEach((area) => {
-                    keyboard.push({
-                        text: `${area}`,
-                        callback_data: `read-areas ${area}`,
-                    })
-                })
-                const inlineKeyboard: any = []
-                const rows = this.sliceIntoChunks(keyboard, 2) // 2 cols in a row
-                rows.forEach((row) => {
-                    inlineKeyboard.push(row)
-                })
-                const options: any = {
-                    reply_markup: {
-                        inline_keyboard: inlineKeyboard,
-                    },
-                }
+                const [keyboard, _] = SelectionKeyboard.create(
+                    areas[user.locale],
+                    Actions.ReadAreas
+                )
                 await this.bot.sendMessage(
                     message.chat.id,
                     locales[user.locale].chooseAreas,
-                    options
+                    {
+                        reply_markup: {
+                            inline_keyboard: keyboard,
+                        },
+                    }
                 )
             } else {
                 await this.usersService.update(user.userId, user.chatId, {

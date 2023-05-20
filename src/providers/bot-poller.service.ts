@@ -9,7 +9,7 @@ require('dotenv').config()
 const BOT_CHAT_TYPE: string = 'private'
 
 @Injectable()
-export class BotService extends Handler implements OnModuleInit {
+export class BotPollerService extends Handler implements OnModuleInit {
     constructor(
         usersService: UsersService,
         requestsService: RequestsService,

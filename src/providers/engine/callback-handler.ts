@@ -162,53 +162,22 @@ export default class CallbackHandler extends BaseHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadEditAreas,
         })
-        let keyboard: any = []
-        let hasChosenItems = false
-        areas[user.locale].forEach((area) => {
-            let requestAreas: any = []
-            if (request.areas) {
-                if (user.locale === 'en') {
-                    request.areas.forEach((area) => {
-                        requestAreas.push(
-                            areas[user.locale][areas['ru'].indexOf(area)]
-                        )
-                    })
-                } else {
-                    requestAreas = request.areas
-                }
-            }
-            const text = requestAreas.includes(area)
-                ? `${CHOSE} ${area}`
-                : `${area}`
-            keyboard.push({ text, callback_data: `read-areas ${area}` })
-            if (text[0] === CHOSE) {
-                hasChosenItems = true
-            }
-        })
-        const inlineKeyboard: any = []
-        const rows = this.sliceIntoChunks(keyboard, 2) // 2 cols in a row
-        rows.forEach((row) => {
-            inlineKeyboard.push(row)
-        })
-        if (keyboard.length === areas[user.locale].length && hasChosenItems) {
-            inlineKeyboard.push([
-                { text: locales[user.locale].next, callback_data: FINISH },
-            ])
-        } else if (
-            !hasChosenItems &&
-            keyboard.length > areas[user.locale].length
-        ) {
-            inlineKeyboard.pop()
-        }
-        const options: any = {
-            reply_markup: {
-                inline_keyboard: inlineKeyboard,
-            },
-        }
+        const [keyboard, _] = SelectionKeyboard.create(
+            areas[user.locale],
+            Actions.ReadAreas,
+            { text: locales[user.locale].next, callback_data: FINISH },
+            request.areas.map(
+                (area) => areas[user.locale][areas['ru'].indexOf(area)]
+            )
+        )
         await this.bot.sendMessage(
             user.chatId,
             locales[user.locale].chooseAreas,
-            options
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
         )
     }
 
@@ -218,39 +187,20 @@ export default class CallbackHandler extends BaseHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadEditBeds,
         })
-        let keyboard: any = []
-        let hasChosenItems = false
-        beds.forEach((numberOfBeds, index) => {
-            const text =
-                request.beds && request.beds.includes(`${index + 1}`)
-                    ? `${CHOSE} ${numberOfBeds}`
-                    : `${numberOfBeds}`
-            keyboard.push({ text, callback_data: `read-beds ${index + 1}` })
-            if (text[0] === CHOSE) {
-                hasChosenItems = true
-            }
-        })
-        const inlineKeyboard: any = []
-        const rows = this.sliceIntoChunks(keyboard, 2) // 2 cols in a row
-        rows.forEach((row) => {
-            inlineKeyboard.push(row)
-        })
-        if (keyboard.length === beds.length && hasChosenItems) {
-            inlineKeyboard.push([
-                { text: locales[user.locale].next, callback_data: FINISH },
-            ])
-        } else if (!hasChosenItems && keyboard.length > beds.length) {
-            inlineKeyboard.pop()
-        }
-        const options: any = {
-            reply_markup: {
-                inline_keyboard: inlineKeyboard,
-            },
-        }
+        const [keyboard, _] = SelectionKeyboard.create(
+            beds,
+            Actions.ReadBeds,
+            { text: locales[user.locale].next, callback_data: FINISH },
+            request.beds
+        )
         await this.bot.sendMessage(
             user.chatId,
             locales[user.locale].numberOfBeds,
-            options
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
         )
     }
 
@@ -478,21 +428,14 @@ export default class CallbackHandler extends BaseHandler {
                   nextAction: Actions.ReadEditMinPrice,
               }
         await this.usersService.update(user.userId, user.chatId, actionData)
-        const keyboardItems: any = []
-        keyboardBeds.forEach((subKeyboard) => {
-            subKeyboard.forEach((subKeyboardItem) => {
-                keyboardItems.push(subKeyboardItem)
-            })
-        })
-        let beds = []
-        keyboardItems.forEach((keyboardBed, index) => {
-            if (keyboardBed.text[0] === CHOSE) {
-                beds.push(index + 1)
+        let userBeds = SelectionKeyboard.getSelected(keyboardBeds).map(
+            (bed) => {
+                return beds.indexOf(bed) + 1
             }
-        })
+        )
         const request: any = await this.requestsService.update(
             +user.requestId,
-            { beds }
+            { beds: userBeds }
         )
         if (isEdit) {
             await this.sendStartSearchingPreview(user, request)
@@ -534,25 +477,11 @@ export default class CallbackHandler extends BaseHandler {
         } else {
             await this.usersService.update(user.userId, user.chatId, actionData)
         }
-        let userAreas: any = []
-        const keyboardItems: any = []
-        keyboardAreas.forEach((subKeyboard) => {
-            subKeyboard.forEach((subKeyboardItem) => {
-                keyboardItems.push(subKeyboardItem)
-            })
-        })
-        keyboardItems.forEach((keyboardArea) => {
-            if (keyboardArea.text[0] === CHOSE) {
-                const areaItem: string = keyboardArea.text.substring(2)
-                if (user.locale === 'en') {
-                    userAreas.push(
-                        areas['ru'][areas[user.locale].indexOf(areaItem)]
-                    )
-                } else {
-                    userAreas.push(areaItem)
-                }
+        let userAreas = SelectionKeyboard.getSelected(keyboardAreas).map(
+            (area) => {
+                return areas['ru'][areas[user.locale].indexOf(area)]
             }
-        })
+        )
         const request: any = await this.requestsService.update(
             +user.requestId,
             { areas: userAreas }
@@ -560,69 +489,50 @@ export default class CallbackHandler extends BaseHandler {
         if (isEdit) {
             await this.sendStartSearchingPreview(user, request)
         } else {
-            let keyboard: any = []
-            beds.forEach((numberOfBeds, index) => {
-                keyboard.push({
-                    text: `${numberOfBeds}`,
-                    callback_data: `read-beds ${index + 1}`,
-                })
-            })
-            const inlineKeyboard: any = []
-            const rows = this.sliceIntoChunks(keyboard, 2) // 2 cols in a row
-            rows.forEach((row) => {
-                inlineKeyboard.push(row)
-            })
-            const options: any = {
-                reply_markup: {
-                    inline_keyboard: inlineKeyboard,
-                },
-            }
+            const [keyboard, _] = SelectionKeyboard.create(
+                beds,
+                Actions.ReadBeds,
+                { text: locales[user.locale].next, callback_data: FINISH },
+                request.beds ?? []
+            )
             await this.bot.sendMessage(
                 user.chatId,
                 locales[user.locale].numberOfBeds,
-                options
+                {
+                    reply_markup: {
+                        inline_keyboard: keyboard,
+                    },
+                }
             )
         }
     }
 
     async handleBedMessage(messageId, data, keyboard, user) {
-        const numberOfBeds: number = data.substring('read-beds '.length)
+        const numberOfBeds: number = data.substring(
+            `${Actions.ReadBeds} `.length
+        )
         console.debug(numberOfBeds)
-        const [newKeyboard, anySelected] = SelectionKeyboard.proccess(
+        const [newKeyboard, _] = SelectionKeyboard.proccess(
             keyboard,
             numberOfBeds,
-            beds
+            beds,
+            { text: locales[user.locale].next, callback_data: FINISH }
         )
-        if (anySelected) {
-            newKeyboard.push([
-                { text: locales[user.locale].next, callback_data: FINISH },
-            ])
-        }
         await this.bot.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },
             { chat_id: user.chatId, message_id: messageId }
         )
-        const keyboardItems: any = []
-        keyboard.forEach((subKeyboard) => {
-            subKeyboard.forEach((subKeyboardItem) => {
-                keyboardItems.push(subKeyboardItem)
-            })
-        })
     }
 
     async handleAreaMessage(messageId, data, keyboard, user) {
         console.debug(keyboard)
-        const area: string = data.substring('read-areas '.length)
-        const [newKeyboard, anySelected] = SelectionKeyboard.proccess(
+        const area: string = data.substring(`${Actions.ReadAreas} `.length)
+        const [newKeyboard, _] = SelectionKeyboard.proccess(
             keyboard,
             area,
-            areas[user.locale]
+            areas[user.locale],
+            { text: locales[user.locale].next, callback_data: FINISH }
         )
-        if (anySelected) {
-            newKeyboard.push([
-                { text: locales[user.locale].next, callback_data: FINISH },
-            ])
-        }
         await this.bot.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },
             { chat_id: user.chatId, message_id: messageId }
