@@ -1,4 +1,5 @@
 import Airtable from 'airtable'
+import enteringAreas from "../../config/enteringAreas"
 
 require('dotenv').config()
 
@@ -31,6 +32,17 @@ export default class Database {
         return databaseUser.get('Доступ действителен') === '✅'
     }
 
+    static addAreasThatIncludeOther(areas) {
+        const set = new Set()
+        areas.forEach(area => {
+            set.add(area);
+            enteringAreas[area].forEach(includedArea => {
+                set.add(includedArea)
+            });
+        });
+        return Array.from(set)
+    }
+
     static generateFilterForProperties(
         areas,
         beds,
@@ -42,11 +54,13 @@ export default class Database {
         // for arrays as contain or in. Therefore, the search for the number is
         // performed by the string with the number treated with commas
         const propertiesFormula = `NOT(SEARCH(CONCATENATE(",", {Номер} ,","), ',${properties},'))`
+        const areas_ = this.addAreasThatIncludeOther(areas)
+        console.log(areas_)
         return `
         AND(
             ${properties.length ? propertiesFormula : 'TRUE()'},
             {Модерация},
-            SEARCH({Район}, '${areas}'),
+            SEARCH({Район}, '${areas_}'),
             SEARCH({Количество спален}, '${beds}'),
             {Цена долларов в месяц} >= ${minPrice},
             {Цена долларов в месяц} <= ${price}
