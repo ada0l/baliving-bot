@@ -5,21 +5,17 @@ import Database from './database'
 import areas from '../../config/areas'
 import { RequestsService } from '../../requests/requests.service'
 import { Templater } from './templater'
-import { Actions, BaseHandler, Commands } from './base-handler'
-import { FetchService } from 'nestjs-fetch'
+import { Actions } from './actions'
+import { Commands } from './commands'
+import { SelectionKeyboard } from './selection-keyboard'
+import { BotSenderService } from '../bot-sender.service'
 
-const CHOSE = '✅'
-const TRIAL = 'TRIAL'
-
-export default class MessageHandler extends BaseHandler {
+export default class MessageHandler {
     constructor(
-        usersService: UsersService,
-        requestsService: RequestsService,
-        bot,
-        fetch: FetchService
-    ) {
-        super(usersService, requestsService, bot, fetch)
-    }
+        private usersService: UsersService,
+        private requestsService: RequestsService,
+        private botSenderService: BotSenderService
+    ) {}
 
     async handle(message) {
         const chatId: number = message.chat.id
@@ -65,24 +61,28 @@ export default class MessageHandler extends BaseHandler {
             nextAction: Actions.ReadEditMinPrice,
             requestId: null,
         })
-        await this.bot.sendMessage(message.chat.id, locales.askLocale, {
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        {
-                            text: locales.ru.language,
-                            callback_data: 'choose-locale:ru',
-                        },
+        await this.botSenderService.sendMessage(
+            message.chat.id,
+            locales.askLocale,
+            {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: locales.ru.language,
+                                callback_data: 'choose-locale:ru',
+                            },
+                        ],
+                        [
+                            {
+                                text: locales.en.language,
+                                callback_data: 'choose-locale:en',
+                            },
+                        ],
                     ],
-                    [
-                        {
-                            text: locales.en.language,
-                            callback_data: 'choose-locale:en',
-                        },
-                    ],
-                ],
-            },
-        })
+                },
+            }
+        )
     }
 
     async handleEditMessage(message) {
@@ -119,7 +119,7 @@ export default class MessageHandler extends BaseHandler {
                 ],
             },
         }
-        await this.bot.sendMessage(
+        await this.botSenderService.sendMessage(
             message.chat.id,
             locales[user.locale].choseEditOption,
             options
@@ -140,25 +140,31 @@ export default class MessageHandler extends BaseHandler {
         await this.usersService.update(user.userId, user.chatId, actionData)
         console.debug(minPrice)
         if (Number.isNaN(minPrice)) {
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].minPrice
             )
             return
         }
         if (user.nextAction.includes('delete-message')) {
-            await this.bot.deleteMessage(
+            await this.botSenderService.deleteMessage(
                 user.chatId,
                 +user.nextAction.substring(user.nextAction.indexOf(':') + 1)
             )
         }
-        await this.bot.deleteMessage(user.chatId, message.message_id)
+        await this.botSenderService.deleteMessage(
+            user.chatId,
+            message.message_id
+        )
         await this.requestsService.update(+user.requestId, { minPrice })
         const request: any = await this.requestsService.find(+user.requestId)
         if (isEdit) {
-            await this.sendStartSearchingPreview(user, request)
+            await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
-            await this.bot.sendMessage(user.chatId, locales[user.locale].price)
+            await this.botSenderService.sendMessage(
+                user.chatId,
+                locales[user.locale].price
+            )
             await this.usersService.update(user.userId, user.chatId, {
                 currentAction: Actions.WaitingForReply,
                 nextAction: Actions.ReadPrice,
@@ -170,25 +176,33 @@ export default class MessageHandler extends BaseHandler {
         const price: number = +message.text
         console.debug(price)
         if (Number.isNaN(price)) {
-            await this.bot.sendMessage(user.chatId, locales[user.locale].price)
+            await this.botSenderService.sendMessage(
+                user.chatId,
+                locales[user.locale].price
+            )
         } else {
             console.debug(message)
             const request: any = await this.requestsService.update(
                 +user.requestId,
-                { price }
+                {
+                    price,
+                }
             )
             if (user.nextAction.includes('delete-message')) {
-                await this.bot.deleteMessage(
+                await this.botSenderService.deleteMessage(
                     user.chatId,
                     +user.nextAction.substring(user.nextAction.indexOf(':') + 1)
                 )
             }
-            await this.bot.deleteMessage(user.chatId, message.message_id)
+            await this.botSenderService.deleteMessage(
+                user.chatId,
+                message.message_id
+            )
             await this.usersService.update(user.userId, user.chatId, {
                 currentAction: Actions.WaitingForReply,
                 nextAction: Actions.Confirm,
             })
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 message.chat.id,
                 locales[user.locale].finish,
                 { parse_mode: 'html' }
@@ -206,23 +220,18 @@ export default class MessageHandler extends BaseHandler {
                 },
             }
             const template = Templater.applyDetails(request, user.locale)
-            await this.bot.sendMessage(message.chat.id, template, options)
+            await this.botSenderService.sendMessage(
+                message.chat.id,
+                template,
+                options
+            )
         }
-    }
-
-    async handleStartMessage(message, user) {
-        await this.usersService.update(user.userId, user.chatId, {
-            currentAction: Actions.AskEmail,
-            nextAction: Actions.ReadEmail,
-            requestId: null,
-        })
-        await this.bot.sendMessage(message.chat.id, locales[user.locale].start)
     }
 
     async handleEmailMessage(message, user) {
         const email: string = message.text.toString().toLowerCase()
         await this.usersService.update(user.userId, user.chatId, { email })
-        await this.bot.sendMessage(
+        await this.botSenderService.sendMessage(
             message.chat.id,
             locales[user.locale].checking
         )
@@ -254,29 +263,29 @@ export default class MessageHandler extends BaseHandler {
                     ],
                 },
             }
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 message.chat.id,
                 locales[user.locale].notFound,
                 options
             )
         } else if (
-            databaseUser.get('Доступ действителен') === CHOSE ||
-            databaseUser.get('TRIAL') === TRIAL
+            Database.isUserAccessValid(databaseUser) ||
+            Database.isTrialUser(databaseUser)
         ) {
             if (
-                databaseUser.get('Plan') === 'VIP' ||
-                databaseUser.get('TRIAL') === TRIAL
+                Database.isVIPUser(databaseUser) ||
+                Database.isTrialUser(databaseUser)
             ) {
                 await this.usersService.update(user.userId, user.chatId, {
                     currentAction: Actions.WaitingForReply,
                     nextAction: Actions.ReadAreas,
-                    isTrial: databaseUser.get('TRIAL') === TRIAL,
+                    isTrial: Database.isTrialUser(databaseUser),
                 })
                 const [keyboard, _] = SelectionKeyboard.create(
                     areas[user.locale],
                     Actions.ReadAreas
                 )
-                await this.bot.sendMessage(
+                await this.botSenderService.sendMessage(
                     message.chat.id,
                     locales[user.locale].chooseAreas,
                     {
@@ -320,7 +329,7 @@ export default class MessageHandler extends BaseHandler {
                         ],
                     },
                 }
-                await this.bot.sendMessage(
+                await this.botSenderService.sendMessage(
                     message.chat.id,
                     locales[user.locale].expired,
                     options
@@ -353,7 +362,7 @@ export default class MessageHandler extends BaseHandler {
                     ],
                 },
             }
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 message.chat.id,
                 locales[user.locale].expired,
                 options

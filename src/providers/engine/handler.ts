@@ -2,29 +2,29 @@ import { UsersService } from '../../users/users.service'
 import { RequestsService } from '../../requests/requests.service'
 import CallbackHandler from './callback-handler'
 import MessageHandler from './message-handler'
-import { FetchService } from 'nestjs-fetch'
+import { BotSenderService } from '../bot-sender.service'
 
 export default class Handler {
     private readonly callbackHandler: CallbackHandler
     private readonly messageHandler: MessageHandler
+    protected readonly bot: any
 
     constructor(
         usersService: UsersService,
         requestsService: RequestsService,
-        protected readonly bot,
-        fetch: FetchService
+        botSenderService: BotSenderService,
+        bot
     ) {
+        this.bot = bot
         this.callbackHandler = new CallbackHandler(
             usersService,
             requestsService,
-            bot,
-            fetch
+            botSenderService
         )
         this.messageHandler = new MessageHandler(
             usersService,
             requestsService,
-            bot,
-            fetch
+            botSenderService
         )
     }
 

@@ -24,7 +24,10 @@ export class Templater {
             '${price}',
             property.get('Цена долларов в месяц')
         )
-        let link = locales[userLocale].catalog_url.replace('${id}', property.get('ad_id'))
+        let link = locales[userLocale].catalog_url.replace(
+            '${id}',
+            property.get('ad_id')
+        )
         template = template.replace(
             '${link}',
             `<a href="${link}">${locales[userLocale].link}</a>`

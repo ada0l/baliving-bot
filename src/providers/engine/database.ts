@@ -19,6 +19,18 @@ export default class Database {
         }
     }
 
+    static isTrialUser(databaseUser) {
+        return databaseUser.get('TRIAL') === 'TRIAL'
+    }
+
+    static isVIPUser(databaseUser) {
+        return databaseUser.get('Plan') === 'VIP'
+    }
+
+    static isUserAccessValid(databaseUser) {
+        return databaseUser.get('Доступ действителен') === '✅'
+    }
+
     static generateFilterForProperties(
         areas,
         beds,
@@ -55,7 +67,7 @@ export default class Database {
                         minPrice,
                         price
                     ),
-                    maxRecords: limit
+                    maxRecords: limit,
                 })
                 .all()
         } catch (exception) {
@@ -84,7 +96,7 @@ export default class Database {
                         price,
                         properties
                     ),
-                    maxRecords: limit
+                    maxRecords: limit,
                 })
                 .all()
         } catch (exception) {

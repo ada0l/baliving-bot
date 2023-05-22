@@ -5,31 +5,17 @@ import Database from './database'
 import areas from '../../config/areas'
 import beds from '../../config/beds'
 import { RequestsService } from '../../requests/requests.service'
-import { FetchService } from 'nestjs-fetch'
-import { Templater } from './templater'
-import { BaseHandler, Actions } from './base-handler'
+import { Actions } from './actions'
 import { SelectionKeyboard } from './selection-keyboard'
+import { BotSenderService } from '../bot-sender.service'
+import { isValidUrl } from './utils'
 
-const CHOSE = '✅'
-const TRIAL = 'TRIAL'
-
-const FINISH = 'finish'
-const START_SEARCH = 'start-search'
-
-const EDIT_AREAS = 'edit-areas'
-const EDIT_BEDS = 'edit-beds'
-const EDIT_PRICE = 'edit-price'
-const EDIT_MIN_PRICE = 'edit-min-price'
-
-export default class CallbackHandler extends BaseHandler {
+export default class CallbackHandler {
     constructor(
-        usersService: UsersService,
-        requestsService: RequestsService,
-        bot,
-        fetch: FetchService
-    ) {
-        super(usersService, requestsService, bot, fetch)
-    }
+        private usersService: UsersService,
+        private requestsService: RequestsService,
+        private botSenderService: BotSenderService
+    ) {}
 
     async handle(chatId, userId, messageId, data, keyboard) {
         const user: User = await this.usersService.findOne(userId, chatId)
@@ -45,8 +31,8 @@ export default class CallbackHandler extends BaseHandler {
                 )
             } else if (data === 'start') {
                 await this.handleEmailMessage(chatId, userId, user)
-            } else if (user.nextAction === 'read-areas') {
-                if (data === FINISH) {
+            } else if (user.nextAction === Actions.ReadAreas) {
+                if (data === Actions.Finish) {
                     await this.handleFinishAreaMessage(
                         messageId,
                         user,
@@ -61,54 +47,61 @@ export default class CallbackHandler extends BaseHandler {
                     )
                 }
             } else if (user.nextAction === Actions.ReadBeds) {
-                if (data === FINISH) {
+                if (data === Actions.Finish) {
                     await this.handleFinishBedMessage(messageId, user, keyboard)
                 } else {
                     await this.handleBedMessage(messageId, data, keyboard, user)
                 }
             } else if (
-                [EDIT_AREAS, EDIT_BEDS, EDIT_MIN_PRICE, EDIT_PRICE].includes(
-                    data
-                )
+                [
+                    Actions.EditAreas,
+                    Actions.EditBeds,
+                    Actions.EditMinPrice,
+                    Actions.EditPrice,
+                ].includes(data)
             ) {
                 const isValid: boolean = await this.isValidUser(user)
                 if (isValid) {
                     switch (data) {
-                        case EDIT_AREAS:
+                        case Actions.EditAreas:
                             await this.handleEditAreasMessage(messageId, user)
                             break
-                        case EDIT_BEDS:
+                        case Actions.EditBeds:
                             await this.handleEditBedsMessage(messageId, user)
                             break
-                        case EDIT_MIN_PRICE:
+                        case Actions.EditMinPrice:
                             await this.handleEditMinPriceMessage(
                                 messageId,
                                 user
                             )
                             break
-                        case EDIT_PRICE:
+                        case Actions.EditPrice:
                             await this.handleEditPriceMessage(messageId, user)
                             break
                     }
                 }
-            } else if (user.nextAction === 'confirm') {
+            } else if (user.nextAction === Actions.Confirm) {
                 console.log(data)
                 if (data.includes(Actions.StartSearch)) {
-                    await this.handleSearchMessage(messageId, user, data.includes(Actions.StartSearchNext))
+                    await this.handleSearchMessage(
+                        messageId,
+                        user,
+                        data.includes(Actions.StartSearchNext)
+                    )
                 }
             } else if (
                 user.nextAction &&
                 user.nextAction.includes('read-edit')
             ) {
-                if (user.nextAction.includes('read-edit-areas')) {
-                    if (data === FINISH) {
+                if (user.nextAction.includes(Actions.ReadEditAreas)) {
+                    if (data === Actions.Finish) {
                         await this.handleFinishAreaMessage(
                             messageId,
                             user,
                             keyboard,
                             true
                         )
-                    } else if (data.includes('read-areas')) {
+                    } else if (data.includes(Actions.ReadAreas)) {
                         await this.handleAreaMessage(
                             messageId,
                             data,
@@ -117,15 +110,15 @@ export default class CallbackHandler extends BaseHandler {
                         )
                     }
                 }
-                if (user.nextAction.includes('read-edit-beds')) {
-                    if (data === FINISH) {
+                if (user.nextAction.includes(Actions.ReadEditBeds)) {
+                    if (data === Actions.Finish) {
                         await this.handleFinishBedMessage(
                             messageId,
                             user,
                             keyboard,
                             true
                         )
-                    } else if (data.includes('read-beds')) {
+                    } else if (data.includes(Actions.ReadBeds)) {
                         await this.handleBedMessage(
                             messageId,
                             data,
@@ -143,7 +136,7 @@ export default class CallbackHandler extends BaseHandler {
     async handleLocaleMessage(chatId, userId, messageId, data, user) {
         const locale: string = data === 'choose-locale:ru' ? 'ru' : 'en'
         user = await this.usersService.update(userId, chatId, { locale })
-        await this.bot.deleteMessage(chatId, messageId)
+        await this.botSenderService.deleteMessage(chatId, messageId)
         await this.handleEmailMessage(chatId, userId, user)
     }
 
@@ -153,7 +146,10 @@ export default class CallbackHandler extends BaseHandler {
             nextAction: Actions.ReadEmail,
             requestId: null,
         })
-        await this.bot.sendMessage(chatId, locales[user.locale].start)
+        await this.botSenderService.sendMessage(
+            chatId,
+            locales[user.locale].start
+        )
     }
 
     async handleEditAreasMessage(messageId, user) {
@@ -165,12 +161,12 @@ export default class CallbackHandler extends BaseHandler {
         const [keyboard, _] = SelectionKeyboard.create(
             areas[user.locale],
             Actions.ReadAreas,
-            { text: locales[user.locale].next, callback_data: FINISH },
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
             request.areas.map(
                 (area) => areas[user.locale][areas['ru'].indexOf(area)]
             )
         )
-        await this.bot.sendMessage(
+        await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].chooseAreas,
             {
@@ -190,10 +186,10 @@ export default class CallbackHandler extends BaseHandler {
         const [keyboard, _] = SelectionKeyboard.create(
             beds,
             Actions.ReadBeds,
-            { text: locales[user.locale].next, callback_data: FINISH },
-            request.beds
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
+            request.beds.map((bed: number) => beds.at(bed - 1))
         )
-        await this.bot.sendMessage(
+        await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].numberOfBeds,
             {
@@ -210,7 +206,7 @@ export default class CallbackHandler extends BaseHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadEditPrice,
         })
-        const botMessage = await this.bot.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].minPrice
         )
@@ -225,7 +221,7 @@ export default class CallbackHandler extends BaseHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadEditPrice,
         })
-        const botMessage = await this.bot.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].price
         )
@@ -235,7 +231,10 @@ export default class CallbackHandler extends BaseHandler {
     }
 
     async isValidUser(user) {
-        this.bot.sendMessage(user.chatId, locales[user.locale].checking)
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            locales[user.locale].checking
+        )
         const databaseUser: any = await Database.findUser(user.email)
         const options: any = {
             reply_markup: {
@@ -262,19 +261,19 @@ export default class CallbackHandler extends BaseHandler {
                 currentAction: Actions.WaitingForReply,
                 nextAction: null,
             })
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].notFound,
                 options
             )
             return false
         } else if (
-            (databaseUser.get('Доступ действителен') === CHOSE &&
-                databaseUser.get('Plan') === 'VIP') ||
-            databaseUser.get('TRIAL') === TRIAL
+            (Database.isUserAccessValid(databaseUser) &&
+                Database.isVIPUser(databaseUser)) ||
+            Database.isTrialUser(databaseUser)
         ) {
             await this.usersService.update(user.userId, user.chatId, {
-                isTrial: databaseUser.get('TRIAL') === TRIAL,
+                isTrial: Database.isTrialUser(databaseUser),
             })
             return true
         } else {
@@ -282,7 +281,7 @@ export default class CallbackHandler extends BaseHandler {
                 currentAction: Actions.WaitingForReply,
                 nextAction: null,
             })
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].expired,
                 options
@@ -296,7 +295,10 @@ export default class CallbackHandler extends BaseHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.Confirm,
         })
-        await this.bot.sendMessage(user.chatId, locales[user.locale].checking)
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            locales[user.locale].checking
+        )
         const request: any = await this.requestsService.find(+user.requestId)
         const properties: any = (() => {
             if (!isNext) {
@@ -304,7 +306,7 @@ export default class CallbackHandler extends BaseHandler {
             }
             return request.properties ?? []
         })()
-        console.debug(isNext);
+        console.debug(isNext)
         const databaseProperties: any = await Database.findNewProperties(
             request.areas,
             request.beds,
@@ -315,8 +317,11 @@ export default class CallbackHandler extends BaseHandler {
         if (databaseProperties.length) {
             let isSent: boolean = false
             for (const property of databaseProperties) {
-                if (this.isValidUrl(property.get('Телеграм ссылка'))) {
-                    const id: any = await this.sendProperty(property, user)
+                if (isValidUrl(property.get('Телеграм ссылка'))) {
+                    const id: any = await this.botSenderService.sendProperty(
+                        property,
+                        user
+                    )
                     if (id) {
                         properties.push(id)
                         isSent = true
@@ -325,7 +330,7 @@ export default class CallbackHandler extends BaseHandler {
             }
             await this.requestsService.update(request.id, { properties })
             if (isSent) {
-                await this.bot.sendMessage(
+                await this.botSenderService.sendMessage(
                     user.chatId,
                     locales[user.locale].maybeYouCanFindSomethingElse,
                     {
@@ -344,71 +349,11 @@ export default class CallbackHandler extends BaseHandler {
                 )
             }
         } else {
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].notFoundOptions
             )
         }
-    }
-
-    async sendProperty(property, user) {
-        try {
-            let options: any = {
-                parse_mode: 'html',
-            }
-            if (!user.isTrial) {
-                options.reply_markup = {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: locales[user.locale].write,
-                                switch_inline_query: locales[user.locale].write,
-                                url: property.get('Телеграм ссылка'),
-                            },
-                        ],
-                    ],
-                }
-            }
-
-            const template = Templater.applyProperty(property, user.locale)
-            await this.bot.sendMessage(user.chatId, template, options)
-
-            if (property.get('Фото') && Array.isArray(property.get('Фото'))) {
-                console.debug('Photo is processing...')
-                let media: any = []
-                const images = property
-                    .get('Фото')
-                    .map((image) => image.thumbnails.large.url)
-                for (const url of images) {
-                    const i = images.indexOf(url)
-                    if (i < 3) {
-                        // limit = 3
-                        media.push({
-                            type: 'photo',
-                            media: url,
-                        })
-                    }
-                }
-                if (media.length) {
-                    await this.bot.sendMediaGroup(user.chatId, media)
-                }
-            }
-
-            return +property.get('Номер')
-        } catch (exception) {
-            console.error(`issue detected ...\n${exception}`)
-            return null
-        }
-    }
-
-    isValidUrl(string) {
-        let url
-        try {
-            url = new URL(string)
-        } catch (_) {
-            return false
-        }
-        return url.protocol === 'http:' || url.protocol === 'https:'
     }
 
     async handleFinishBedMessage(
@@ -417,7 +362,7 @@ export default class CallbackHandler extends BaseHandler {
         keyboardBeds,
         isEdit = false
     ) {
-        await this.bot.deleteMessage(user.chatId, messageId)
+        await this.botSenderService.deleteMessage(user.chatId, messageId)
         const actionData = isEdit
             ? {
                   currentAction: Actions.WaitingForReply,
@@ -435,12 +380,14 @@ export default class CallbackHandler extends BaseHandler {
         )
         const request: any = await this.requestsService.update(
             +user.requestId,
-            { beds: userBeds }
+            {
+                beds: userBeds,
+            }
         )
         if (isEdit) {
-            await this.sendStartSearchingPreview(user, request)
+            await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
-            const botMessage = await this.bot.sendMessage(
+            const botMessage = await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].minPrice
             )
@@ -456,7 +403,7 @@ export default class CallbackHandler extends BaseHandler {
         keyboardAreas,
         isEdit = false
     ) {
-        await this.bot.deleteMessage(user.chatId, messageId)
+        await this.botSenderService.deleteMessage(user.chatId, messageId)
         const actionData = isEdit
             ? {
                   currentAction: Actions.WaitingForReply,
@@ -484,18 +431,23 @@ export default class CallbackHandler extends BaseHandler {
         )
         const request: any = await this.requestsService.update(
             +user.requestId,
-            { areas: userAreas }
+            {
+                areas: userAreas,
+            }
         )
         if (isEdit) {
-            await this.sendStartSearchingPreview(user, request)
+            await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
             const [keyboard, _] = SelectionKeyboard.create(
                 beds,
                 Actions.ReadBeds,
-                { text: locales[user.locale].next, callback_data: FINISH },
+                {
+                    text: locales[user.locale].next,
+                    callback_data: Actions.Finish,
+                },
                 request.beds ?? []
             )
-            await this.bot.sendMessage(
+            await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].numberOfBeds,
                 {
@@ -511,14 +463,13 @@ export default class CallbackHandler extends BaseHandler {
         const numberOfBeds: number = data.substring(
             `${Actions.ReadBeds} `.length
         )
-        console.debug(numberOfBeds)
         const [newKeyboard, _] = SelectionKeyboard.proccess(
             keyboard,
             numberOfBeds,
             beds,
-            { text: locales[user.locale].next, callback_data: FINISH }
+            { text: locales[user.locale].next, callback_data: Actions.Finish }
         )
-        await this.bot.editMessageReplyMarkup(
+        await this.botSenderService.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },
             { chat_id: user.chatId, message_id: messageId }
         )
@@ -531,9 +482,9 @@ export default class CallbackHandler extends BaseHandler {
             keyboard,
             area,
             areas[user.locale],
-            { text: locales[user.locale].next, callback_data: FINISH }
+            { text: locales[user.locale].next, callback_data: Actions.Finish }
         )
-        await this.bot.editMessageReplyMarkup(
+        await this.botSenderService.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },
             { chat_id: user.chatId, message_id: messageId }
         )
