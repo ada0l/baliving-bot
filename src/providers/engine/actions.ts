@@ -2,6 +2,7 @@ export enum Actions {
     WaitingForReply = 'waiting-for-reply',
     Confirm = 'confirm',
     DisplayResults = 'display-results',
+    ReadService = 'read-service',
 
     Finish = 'finish',
 

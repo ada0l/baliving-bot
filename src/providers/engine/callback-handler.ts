@@ -31,6 +31,8 @@ export default class CallbackHandler {
                 )
             } else if (data === 'start') {
                 await this.handleEmailMessage(chatId, userId, user)
+            } else if (user.nextAction === Actions.ReadService) {
+                await this.handleReadService(chatId, userId, messageId, user)
             } else if (user.nextAction === Actions.ReadAreas) {
                 if (data === Actions.Finish) {
                     await this.handleFinishAreaMessage(
@@ -135,7 +137,33 @@ export default class CallbackHandler {
 
     async handleLocaleMessage(chatId, userId, messageId, data, user) {
         const locale: string = data === 'choose-locale:ru' ? 'ru' : 'en'
-        user = await this.usersService.update(userId, chatId, { locale })
+        await this.botSenderService.deleteMessage(chatId, messageId)
+        user = await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.ReadService,
+            requestId: null,
+            locale,
+        })
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            locales[user.locale].howWorkService,
+            {
+                disable_web_page_preview: false,
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: locales[user.locale].haveRead,
+                                callback_data: Actions.ReadService,
+                            },
+                        ],
+                    ],
+                },
+            }
+        )
+    }
+
+    async handleReadService(chatId, userId, messageId, user) {
         await this.botSenderService.deleteMessage(chatId, messageId)
         await this.handleEmailMessage(chatId, userId, user)
     }

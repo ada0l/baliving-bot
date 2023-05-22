@@ -2,6 +2,8 @@ export default {
     askLocale: 'Выберите язык интерфейса.\nSelect interface language.',
     ru: {
         language: '🇷🇺Русский',
+        howWorkService: '- КАЖДЫЙ ДЕНЬ собираем предложения по жилью на Бали со всех площадок - вы получаете более 1000 актуальных вариантов\n- КАЖДЫЙ ДЕНЬ связываемся с собственниками и уточняем актуальность - для вас стоимость на сайте БЕЗ комиссий\n- Каждый собственник, если немного постараться, готов к торгу, иногда мы можем даже помочь (спросите меня "как"? 😉)\n- Мы предоставляем все варианты в одном месте и в удобном формате, вам не нужно искать на разных площадках и бояться упустить лучшее жилье',
+        haveRead: 'Ознакомился',
         photos: 'Фотографии объекта',
         start: 'Введите, пожалуйста, почту, которую вы указали при регистрации',
         notFound:
@@ -48,6 +50,8 @@ export default {
     },
     en: {
         language: '🇺🇸English',
+        howWorkService: '- EVERY DAY we collect housing offers in Bali from all sites - you get more than 1000 current options\n- EVERY DAY we contact the owners and update the relevance - for you the cost on the site NO fees\n- Each owner, if you try a little, is ready to trade, sometimes we can even help (ask me "how"? 😉)\n- We provide all options in one place and in a convenient format, you do not need to look at different sites and be afraid to miss the best housing',
+        haveRead: 'I have read',
         photos: 'Photos of the property',
         start: 'Please enter the email you provided during registration',
         notFound:

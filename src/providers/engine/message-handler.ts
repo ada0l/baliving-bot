@@ -55,6 +55,25 @@ export default class MessageHandler {
         }
     }
 
+
+    async handleReadService(message, user) {
+        await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.WaitingForReply,
+            requestId: null,
+        })
+        await this.botSenderService.sendMessage(message.chat.id, {
+            reply_markup: {
+                inline_keyboard: [
+                    {
+                        text: "Ознакомился",
+                        callback_data: Actions.ReadService
+                    }
+                ]
+            }
+        })
+    }
+
     async handleLocaleMessage(message, user) {
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
