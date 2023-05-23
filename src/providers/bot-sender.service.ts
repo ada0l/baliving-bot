@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common'
+import areas from 'src/config/areas'
 import locales from 'src/config/locales'
+import { RequestsService } from 'src/requests/requests.service'
+import { Actions } from './engine/actions'
+import { SelectionKeyboard } from './engine/selection-keyboard'
 import { Templater } from './engine/templater'
 
 const TelegramBot = require('node-telegram-bot-api')
@@ -9,7 +13,7 @@ require('dotenv').config()
 export class BotSenderService {
     protected bot: any
 
-    constructor() {
+    constructor(private requestsService: RequestsService) {
         this.bot = new TelegramBot(process.env.TOKEN)
     }
 
@@ -31,6 +35,47 @@ export class BotSenderService {
         }
         const template = Templater.applyDetails(request, user.locale)
         await this.sendMessage(user.chatId, template, options)
+    }
+
+    async isEditStage(user) {
+        if (!user.requestId) {
+            return false
+        }
+        const request: any = await this.requestsService.find(+user.requestId)
+        return request && request.isFilled()
+    }
+
+    async sendAreaKeyboard(user, request) {
+        const selectedAreas =
+            request != null
+                ? request.areas.map(
+                      (area) => areas[user.locale][areas['ru'].indexOf(area)]
+                  )
+                : []
+        const [keyboard, anySelected] = SelectionKeyboard.create(
+            areas[user.locale],
+            Actions.ReadAreas,
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
+            selectedAreas
+        )
+        if (!anySelected) {
+            console.debug('add area is not important')
+            keyboard.push([
+                {
+                    text: locales[user.locale].areaIsNotImportant,
+                    callback_data: Actions.AreaIsNotImportant,
+                },
+            ])
+        }
+        return await this.sendMessage(
+            user.chatId,
+            locales[user.locale].chooseAreas,
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
+        )
     }
 
     async sendProperty(property, user) {

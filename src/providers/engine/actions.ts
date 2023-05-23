@@ -3,6 +3,8 @@ export enum Actions {
     Confirm = 'confirm',
     DisplayResults = 'display-results',
     ReadService = 'read-service',
+    AreaIsNotImportant = 'area-is-not-important',
+    AskArea = 'AskArea',
 
     Finish = 'finish',
 

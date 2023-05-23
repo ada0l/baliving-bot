@@ -36,6 +36,7 @@ export class SelectionKeyboard {
         alreadySelected = [],
         size = 2
     ) {
+        console.debug(alreadySelected)
         let keyboard: any = []
         let anySelected = false
         data.forEach((dataItem) => {

@@ -1,5 +1,5 @@
 import Airtable from 'airtable'
-import enteringAreas from "../../config/enteringAreas"
+import enteringAreas from '../../config/enteringAreas'
 
 require('dotenv').config()
 
@@ -34,12 +34,12 @@ export default class Database {
 
     static addAreasThatIncludeOther(areas) {
         const set = new Set()
-        areas.forEach(area => {
-            set.add(area);
-            enteringAreas[area].forEach(includedArea => {
+        areas.forEach((area) => {
+            set.add(area)
+            enteringAreas[area].forEach((includedArea) => {
                 set.add(includedArea)
-            });
-        });
+            })
+        })
         return Array.from(set)
     }
 

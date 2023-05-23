@@ -42,36 +42,13 @@ export default class MessageHandler {
                 (user.nextAction.includes(Actions.ReadMinPrice) ||
                     user.nextAction.includes(Actions.ReadEditMinPrice))
             ) {
-                await this.handleMinPriceMessage(
-                    message,
-                    user,
-                    user.nextAction.includes(Actions.ReadEditMinPrice)
-                )
+                await this.handleMinPriceMessage(message, user)
             } else if (message.text === Commands.Edit) {
                 await this.handleEditMessage(message)
             }
         } catch (exception) {
             console.error(exception)
         }
-    }
-
-
-    async handleReadService(message, user) {
-        await this.usersService.update(user.userId, user.chatId, {
-            currentAction: Actions.WaitingForReply,
-            nextAction: Actions.WaitingForReply,
-            requestId: null,
-        })
-        await this.botSenderService.sendMessage(message.chat.id, {
-            reply_markup: {
-                inline_keyboard: [
-                    {
-                        text: "Ознакомился",
-                        callback_data: Actions.ReadService
-                    }
-                ]
-            }
-        })
     }
 
     async handleLocaleMessage(message, user) {
@@ -145,8 +122,9 @@ export default class MessageHandler {
         )
     }
 
-    async handleMinPriceMessage(message, user, isEdit = false) {
+    async handleMinPriceMessage(message, user) {
         const minPrice: number = +message.text
+        const isEdit = await this.botSenderService.isEditStage(user)
         const actionData = isEdit
             ? {
                   currentAction: Actions.WaitingForReply,
@@ -300,19 +278,10 @@ export default class MessageHandler {
                     nextAction: Actions.ReadAreas,
                     isTrial: Database.isTrialUser(databaseUser),
                 })
-                const [keyboard, _] = SelectionKeyboard.create(
-                    areas[user.locale],
-                    Actions.ReadAreas
+                const request: any = await this.requestsService.find(
+                    +user.requestId
                 )
-                await this.botSenderService.sendMessage(
-                    message.chat.id,
-                    locales[user.locale].chooseAreas,
-                    {
-                        reply_markup: {
-                            inline_keyboard: keyboard,
-                        },
-                    }
-                )
+                await this.botSenderService.sendAreaKeyboard(user, request)
             } else {
                 await this.usersService.update(user.userId, user.chatId, {
                     currentAction: Actions.WaitingForReply,

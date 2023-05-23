@@ -20,6 +20,7 @@ export default class CallbackHandler {
     async handle(chatId, userId, messageId, data, keyboard) {
         const user: User = await this.usersService.findOne(userId, chatId)
         console.debug(user)
+        console.debug(data)
         try {
             if (['choose-locale:ru', 'choose-locale:en'].includes(data)) {
                 await this.handleLocaleMessage(
@@ -33,6 +34,10 @@ export default class CallbackHandler {
                 await this.handleEmailMessage(chatId, userId, user)
             } else if (user.nextAction === Actions.ReadService) {
                 await this.handleReadService(chatId, userId, messageId, user)
+            } else if (data.includes(Actions.AreaIsNotImportant)) {
+                await this.handleAreaIsNotImportant(user)
+            } else if (data.includes(Actions.AskArea)) {
+                await this.handleAskArea(user)
             } else if (user.nextAction === Actions.ReadAreas) {
                 if (data === Actions.Finish) {
                     await this.handleFinishAreaMessage(
@@ -100,8 +105,7 @@ export default class CallbackHandler {
                         await this.handleFinishAreaMessage(
                             messageId,
                             user,
-                            keyboard,
-                            true
+                            keyboard
                         )
                     } else if (data.includes(Actions.ReadAreas)) {
                         await this.handleAreaMessage(
@@ -117,8 +121,7 @@ export default class CallbackHandler {
                         await this.handleFinishBedMessage(
                             messageId,
                             user,
-                            keyboard,
-                            true
+                            keyboard
                         )
                     } else if (data.includes(Actions.ReadBeds)) {
                         await this.handleBedMessage(
@@ -186,23 +189,7 @@ export default class CallbackHandler {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadEditAreas,
         })
-        const [keyboard, _] = SelectionKeyboard.create(
-            areas[user.locale],
-            Actions.ReadAreas,
-            { text: locales[user.locale].next, callback_data: Actions.Finish },
-            request.areas.map(
-                (area) => areas[user.locale][areas['ru'].indexOf(area)]
-            )
-        )
-        await this.botSenderService.sendMessage(
-            user.chatId,
-            locales[user.locale].chooseAreas,
-            {
-                reply_markup: {
-                    inline_keyboard: keyboard,
-                },
-            }
-        )
+        await this.botSenderService.sendAreaKeyboard(user, request)
     }
 
     async handleEditBedsMessage(messageId, user) {
@@ -228,7 +215,7 @@ export default class CallbackHandler {
         )
     }
 
-    async handleEditMinPriceMessage(messageId, user, isEdit = false) {
+    async handleEditMinPriceMessage(messageId, user) {
         console.debug(messageId)
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
@@ -384,13 +371,9 @@ export default class CallbackHandler {
         }
     }
 
-    async handleFinishBedMessage(
-        messageId,
-        user,
-        keyboardBeds,
-        isEdit = false
-    ) {
+    async handleFinishBedMessage(messageId, user, keyboardBeds) {
         await this.botSenderService.deleteMessage(user.chatId, messageId)
+        const isEdit = await this.botSenderService.isEditStage(user)
         const actionData = isEdit
             ? {
                   currentAction: Actions.WaitingForReply,
@@ -425,13 +408,9 @@ export default class CallbackHandler {
         }
     }
 
-    async handleFinishAreaMessage(
-        messageId,
-        user,
-        keyboardAreas,
-        isEdit = false
-    ) {
+    async handleFinishAreaMessage(messageId, user, keyboardAreas) {
         await this.botSenderService.deleteMessage(user.chatId, messageId)
+        const isEdit = await this.botSenderService.isEditStage(user)
         const actionData = isEdit
             ? {
                   currentAction: Actions.WaitingForReply,
@@ -506,15 +485,69 @@ export default class CallbackHandler {
     async handleAreaMessage(messageId, data, keyboard, user) {
         console.debug(keyboard)
         const area: string = data.substring(`${Actions.ReadAreas} `.length)
-        const [newKeyboard, _] = SelectionKeyboard.proccess(
+        const [newKeyboard, anySelected] = SelectionKeyboard.proccess(
             keyboard,
             area,
             areas[user.locale],
             { text: locales[user.locale].next, callback_data: Actions.Finish }
         )
+        if (!anySelected) {
+            console.debug('add area is not important')
+            newKeyboard.push([
+                {
+                    text: locales[user.locale].areaIsNotImportant,
+                    callback_data: Actions.AreaIsNotImportant,
+                },
+            ])
+        }
         await this.botSenderService.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },
             { chat_id: user.chatId, message_id: messageId }
         )
+    }
+
+    async handleAreaIsNotImportant(user) {
+        user = await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.WaitingForReply,
+        })
+        const keyboard = [
+            [
+                {
+                    text: locales[user.locale].writeToSupport,
+                    callback_data: '123',
+                },
+            ],
+            [
+                {
+                    text: locales[user.locale].articleAboutChoosingArea,
+                    callback_data: '123',
+                },
+            ],
+            [
+                {
+                    text: locales[user.locale].editAreas,
+                    callback_data: Actions.AskArea,
+                },
+            ],
+        ]
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            'Как-то не круто',
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
+        )
+    }
+
+    async handleAskArea(user) {
+        await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.ReadAreas,
+        })
+        const request: any = await this.requestsService.find(+user.requestId)
+        await this.botSenderService.sendAreaKeyboard(user, request)
     }
 }
