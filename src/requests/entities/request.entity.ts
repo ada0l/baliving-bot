@@ -43,4 +43,13 @@ export class Request {
 
     @DeleteDateColumn({ name: 'deleted_at' })
     deletedAt: Date
+
+    isFilled() {
+        return (
+            this.areas != null &&
+            this.beds != null &&
+            this.minPrice != null &&
+            this.price != null
+        )
+    }
 }
