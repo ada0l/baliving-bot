@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { HttpException, Injectable } from '@nestjs/common'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { User } from './entities/user.entity'
@@ -37,5 +37,21 @@ export class UsersService {
 
     async delete(userId: number) {
         return await this.usersRepository.delete({ userId })
+    }
+
+    async addMessageForDelete(
+        userId: number,
+        chatId: number,
+        messageId: number
+    ) {
+        const user: User = await this.findOne(userId, chatId)
+        user.messageForDelete.push(messageId)
+        return await this.usersRepository.save({ ...user })
+    }
+
+    async clearMessageForDelete(userId: number, chatId: number) {
+        const user: User = await this.findOne(userId, chatId)
+        user.messageForDelete = []
+        return await this.usersRepository.save({ ...user })
     }
 }
