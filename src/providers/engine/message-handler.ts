@@ -57,7 +57,7 @@ export default class MessageHandler {
             nextAction: Actions.ReadEditMinPrice,
             requestId: null,
         })
-        await this.botSenderService.sendMessage(
+        const message_ = await this.botSenderService.sendMessage(
             message.chat.id,
             locales.askLocale,
             {
@@ -78,6 +78,11 @@ export default class MessageHandler {
                     ],
                 },
             }
+        )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            message_.message_id
         )
     }
 
@@ -115,14 +120,20 @@ export default class MessageHandler {
                 ],
             },
         }
-        await this.botSenderService.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             message.chat.id,
             locales[user.locale].choseEditOption,
             options
         )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
+        )
     }
 
     async handleMinPriceMessage(message, user) {
+        await this.botSenderService.deleteMessageForUser(user)
         const minPrice: number = +message.text
         const isEdit = await this.botSenderService.isEditStage(user)
         const actionData = isEdit
@@ -143,12 +154,6 @@ export default class MessageHandler {
             )
             return
         }
-        if (user.nextAction.includes('delete-message')) {
-            await this.botSenderService.deleteMessage(
-                user.chatId,
-                +user.nextAction.substring(user.nextAction.indexOf(':') + 1)
-            )
-        }
         await this.botSenderService.deleteMessage(
             user.chatId,
             message.message_id
@@ -158,9 +163,14 @@ export default class MessageHandler {
         if (isEdit) {
             await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
-            await this.botSenderService.sendMessage(
+            const botMessage = await this.botSenderService.sendMessage(
                 user.chatId,
                 locales[user.locale].price
+            )
+            await this.usersService.addMessageForDelete(
+                user.userId,
+                user.chatId,
+                botMessage.message_id
             )
             await this.usersService.update(user.userId, user.chatId, {
                 currentAction: Actions.WaitingForReply,
@@ -185,12 +195,7 @@ export default class MessageHandler {
                     price,
                 }
             )
-            if (user.nextAction.includes('delete-message')) {
-                await this.botSenderService.deleteMessage(
-                    user.chatId,
-                    +user.nextAction.substring(user.nextAction.indexOf(':') + 1)
-                )
-            }
+            await this.botSenderService.deleteMessageForUser(user)
             await this.botSenderService.deleteMessage(
                 user.chatId,
                 message.message_id
@@ -228,11 +233,20 @@ export default class MessageHandler {
     async handleEmailMessage(message, user) {
         const email: string = message.text.toString().toLowerCase()
         await this.usersService.update(user.userId, user.chatId, { email })
-        await this.botSenderService.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             message.chat.id,
             locales[user.locale].checking
         )
+        await this.botSenderService.deleteMessageForUser(user)
+        await this.botSenderService.deleteMessage(
+            user.chatId,
+            message.message_id
+        )
         const databaseUser: any = await Database.findUser(email)
+        await this.botSenderService.deleteMessage(
+            user.chatId,
+            botMessage.message_id
+        )
         if (!databaseUser) {
             await this.usersService.update(user.userId, user.chatId, {
                 currentAction: Actions.WaitingForReply,

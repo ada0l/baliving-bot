@@ -140,14 +140,14 @@ export default class CallbackHandler {
 
     async handleLocaleMessage(chatId, userId, messageId, data, user) {
         const locale: string = data === 'choose-locale:ru' ? 'ru' : 'en'
-        await this.botSenderService.deleteMessage(chatId, messageId)
+        await this.botSenderService.deleteMessageForUser(user)
         user = await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadService,
             requestId: null,
             locale,
         })
-        await this.botSenderService.sendMessage(
+        const message = await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].howWorkService,
             {
@@ -164,10 +164,15 @@ export default class CallbackHandler {
                 },
             }
         )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            message.message_id
+        )
     }
 
     async handleReadService(chatId, userId, messageId, user) {
-        await this.botSenderService.deleteMessage(chatId, messageId)
+        await this.botSenderService.deleteMessageForUser(user)
         await this.handleEmailMessage(chatId, userId, user)
     }
 
@@ -177,9 +182,14 @@ export default class CallbackHandler {
             nextAction: Actions.ReadEmail,
             requestId: null,
         })
-        await this.botSenderService.sendMessage(
+        const message = await this.botSenderService.sendMessage(
             chatId,
             locales[user.locale].start
+        )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            message.message_id
         )
     }
 
@@ -225,8 +235,13 @@ export default class CallbackHandler {
             user.chatId,
             locales[user.locale].minPrice
         )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
+        )
         await this.usersService.update(user.userId, user.chatId, {
-            nextAction: `${Actions.ReadEditMinPrice},delete-message:${botMessage.message_id}`,
+            nextAction: Actions.ReadEditMinPrice,
         })
     }
 
@@ -240,17 +255,27 @@ export default class CallbackHandler {
             user.chatId,
             locales[user.locale].price
         )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
+        )
         await this.usersService.update(user.userId, user.chatId, {
-            nextAction: `${Actions.ReadEditPrice},delete-message:${botMessage.message_id}`,
+            nextAction: Actions.ReadEditPrice,
         })
     }
 
     async isValidUser(user) {
-        await this.botSenderService.sendMessage(
+        const message = await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].checking
         )
         const databaseUser: any = await Database.findUser(user.email)
+        console.debug(user.userId, user.chatId, message.message_id)
+        await this.botSenderService.deleteMessage(
+            user.chatId,
+            message.message_id
+        )
         const options: any = {
             reply_markup: {
                 inline_keyboard: [
@@ -306,11 +331,12 @@ export default class CallbackHandler {
     }
 
     async handleSearchMessage(messageId, user, isNext) {
+        await this.botSenderService.deleteMessageForUser(user)
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.Confirm,
         })
-        await this.botSenderService.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             user.chatId,
             locales[user.locale].checking
         )
@@ -328,6 +354,11 @@ export default class CallbackHandler {
             request.minPrice,
             request.price,
             properties
+        )
+        await this.botSenderService.deleteMessage(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
         )
         if (databaseProperties.length) {
             let isSent: boolean = false
@@ -402,8 +433,13 @@ export default class CallbackHandler {
                 user.chatId,
                 locales[user.locale].minPrice
             )
+            await this.usersService.addMessageForDelete(
+                user.userId,
+                user.chatId,
+                botMessage.message_id
+            )
             await this.usersService.update(user.userId, user.chatId, {
-                nextAction: `${Actions.ReadMinPrice},delete-message:${botMessage.message_id}`,
+                nextAction: Actions.ReadMinPrice,
             })
         }
     }
@@ -531,7 +567,7 @@ export default class CallbackHandler {
                 },
             ],
         ]
-        await this.botSenderService.sendMessage(
+        const botMessage = await this.botSenderService.sendMessage(
             user.chatId,
             'Как-то не круто',
             {
@@ -539,6 +575,11 @@ export default class CallbackHandler {
                     inline_keyboard: keyboard,
                 },
             }
+        )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
         )
     }
 
@@ -548,6 +589,7 @@ export default class CallbackHandler {
             nextAction: Actions.ReadAreas,
         })
         const request: any = await this.requestsService.find(+user.requestId)
+        await this.botSenderService.deleteMessageForUser(user)
         await this.botSenderService.sendAreaKeyboard(user, request)
     }
 }

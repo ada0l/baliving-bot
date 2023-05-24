@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import areas from 'src/config/areas'
 import locales from 'src/config/locales'
 import { RequestsService } from 'src/requests/requests.service'
+import { UsersService } from 'src/users/users.service'
 import { Actions } from './engine/actions'
 import { SelectionKeyboard } from './engine/selection-keyboard'
 import { Templater } from './engine/templater'
@@ -13,11 +14,15 @@ require('dotenv').config()
 export class BotSenderService {
     protected bot: any
 
-    constructor(private requestsService: RequestsService) {
+    constructor(
+        private usersService: UsersService,
+        private requestsService: RequestsService
+    ) {
         this.bot = new TelegramBot(process.env.TOKEN)
     }
 
     async sendStartSearchingPreview(user, request) {
+        await this.deleteMessageForUser(user)
         await this.sendMessage(user.chatId, locales[user.locale].finish, {
             parse_mode: 'html',
         })
@@ -67,7 +72,7 @@ export class BotSenderService {
                 },
             ])
         }
-        return await this.sendMessage(
+        const botMessage = await this.sendMessage(
             user.chatId,
             locales[user.locale].chooseAreas,
             {
@@ -76,6 +81,12 @@ export class BotSenderService {
                 },
             }
         )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
+        )
+        return botMessage
     }
 
     async sendProperty(property, user) {
@@ -133,8 +144,25 @@ export class BotSenderService {
         return await this.bot.sendMessage(...params)
     }
 
+    async deleteMessageForUser(user) {
+        console.debug(user.messageForDelete)
+        if (!user.messageForDelete) {
+            return
+        }
+        user.messageForDelete.forEach((messageId) => {
+            try {
+                this.deleteMessage(user.chatId, +messageId)
+            } catch (exception) {
+                console.error(`issue detected ...\n${exception}`)
+            }
+        })
+        await this.usersService.clearMessageForDelete(user.userId, user.chatId)
+    }
+
     async deleteMessage(...params: Array<any>) {
-        return await this.bot.deleteMessage(...params)
+        try {
+            return await this.bot.deleteMessage(...params)
+        } catch (exception) {}
     }
 
     async sendMediaGroup(...params: Array<any>) {
