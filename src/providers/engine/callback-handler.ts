@@ -36,6 +36,8 @@ export default class CallbackHandler {
                 await this.handleReadService(chatId, userId, messageId, user)
             } else if (data.includes(Actions.AreaIsNotImportant)) {
                 await this.handleAreaIsNotImportant(user)
+            } else if (data.includes(Actions.AreaNeedConsult)) {
+                await this.handleAreaNeedConsult(user)
             } else if (data.includes(Actions.AskArea)) {
                 await this.handleAskArea(user)
             } else if (user.nextAction === Actions.ReadAreas) {
@@ -534,6 +536,10 @@ export default class CallbackHandler {
                     text: locales[user.locale].areaIsNotImportant,
                     callback_data: Actions.AreaIsNotImportant,
                 },
+                {
+                    text: locales[user.locale].areaNeedConsult,
+                    callback_data: Actions.AreaNeedConsult,
+                }
             ])
         }
         await this.botSenderService.editMessageReplyMarkup(
@@ -570,6 +576,41 @@ export default class CallbackHandler {
         const botMessage = await this.botSenderService.sendMessage(
             user.chatId,
             'Как-то не круто',
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
+        )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            botMessage.message_id
+        )
+    }
+
+    async handleAreaNeedConsult(user) {
+        user = await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.WaitingForReply,
+        })
+        const keyboard = [
+            [
+                {
+                    text: locales[user.locale].articleAboutChoosingArea,
+                    callback_data: '123',
+                },
+            ],
+            [
+                {
+                    text: locales[user.locale].editAreas,
+                    callback_data: Actions.AskArea,
+                },
+            ],
+        ]
+        const botMessage = await this.botSenderService.sendMessage(
+            user.chatId,
+            '123',
             {
                 reply_markup: {
                     inline_keyboard: keyboard,

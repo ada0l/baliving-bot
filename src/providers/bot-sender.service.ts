@@ -70,6 +70,10 @@ export class BotSenderService {
                     text: locales[user.locale].areaIsNotImportant,
                     callback_data: Actions.AreaIsNotImportant,
                 },
+                {
+                    text: locales[user.locale].areaNeedConsult,
+                    callback_data: Actions.AreaNeedConsult,
+                }
             ])
         }
         const botMessage = await this.sendMessage(

@@ -7,6 +7,7 @@ export default {
         haveRead: 'Ознакомился',
         articleAboutChoosingArea: 'Статья о выборе района',
         areaIsNotImportant: 'Район не важен',
+        areaNeedConsult: 'Нужна консультация',
         photos: 'Фотографии объекта',
         start: 'Введите, пожалуйста, почту, которую вы указали при регистрации',
         notFound:
@@ -58,6 +59,7 @@ export default {
         haveRead: 'I have read',
         articleAboutChoosingArea: 'Article about choosing a area',
         areaIsNotImportant: 'The area is not important',
+        areaNeedConsult: 'Need to consult',
         photos: 'Photos of the property',
         start: 'Please enter the email you provided during registration',
         notFound:
