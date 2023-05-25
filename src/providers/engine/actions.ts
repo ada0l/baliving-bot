@@ -4,7 +4,7 @@ export enum Actions {
     DisplayResults = 'display-results',
     ReadService = 'read-service',
     AreaIsNotImportant = 'area-is-not-important',
-    AreaNeedConsult= 'area-need-consult',
+    AreaNeedConsult = 'area-need-consult',
     AskArea = 'AskArea',
 
     Finish = 'finish',
