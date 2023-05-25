@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common'
-import { Cron } from '@nestjs/schedule'
+import { Injectable, OnModuleInit } from '@nestjs/common'
+import { Cron, CronExpression } from '@nestjs/schedule'
 import { UsersService } from '../users/users.service'
 import { RequestsService } from '../requests/requests.service'
 import Database from './engine/database'
@@ -17,6 +17,19 @@ export class TasksService {
         private readonly requestsService: RequestsService,
         private readonly botSenderService: BotSenderService
     ) {}
+
+    @Cron(CronExpression.EVERY_10_MINUTES)
+    handleWarning() {
+        this.usersService.findForWarning().then((users) => {
+            users.forEach((user) => {
+                this.botSenderService.sendMessage(
+                    user.chatId,
+                    'КАК ДЕЛ? ЧЕ ДЕЛ?'
+                )
+            })
+            this.usersService.markAsWarned(users)
+        })
+    }
 
     @Cron('0 0 * * * *')
     handleCron() {

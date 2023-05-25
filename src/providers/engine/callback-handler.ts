@@ -539,7 +539,7 @@ export default class CallbackHandler {
                 {
                     text: locales[user.locale].areaNeedConsult,
                     callback_data: Actions.AreaNeedConsult,
-                }
+                },
             ])
         }
         await this.botSenderService.editMessageReplyMarkup(
@@ -593,6 +593,7 @@ export default class CallbackHandler {
         user = await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.WaitingForReply,
+            warningTime: new Date(Date.now()),
         })
         const keyboard = [
             [
@@ -628,6 +629,7 @@ export default class CallbackHandler {
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
             nextAction: Actions.ReadAreas,
+            warningTime: null,
         })
         const request: any = await this.requestsService.find(+user.requestId)
         await this.botSenderService.deleteMessageForUser(user)
