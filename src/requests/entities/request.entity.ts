@@ -20,6 +20,12 @@ export class Request {
     @Column({ name: 'user_id', type: 'bigint' })
     userId: number
 
+    @Column({ name: 'city', default: null })
+    city: string
+
+    @Column({ name: 'categories', type: 'simple-array', default: null })
+    categories: string
+
     @Column({ name: 'areas', type: 'simple-array', default: null })
     areas: string
 
