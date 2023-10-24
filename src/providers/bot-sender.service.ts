@@ -112,8 +112,8 @@ export class BotSenderService {
                 }
             }
             const template = Templater.applyProperty(property, user.locale)
-            await this.sendMessage(user.chatId, template, options)
             await this.handlePhotos(property, user)
+            await this.sendMessage(user.chatId, template, options)
             return +property.get('Номер')
         } catch (exception) {
             console.error(`issue detected ...\n${exception}`)
