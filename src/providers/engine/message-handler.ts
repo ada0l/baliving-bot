@@ -25,7 +25,7 @@ export default class MessageHandler {
         console.debug(message)
         try {
             if (message.text.toString() === Commands.Start) {
-                await this.handleLocaleMessage(message, user)
+                await this.handleStartMessage(chatId, userId, user)
             } else if (
                 user.nextAction &&
                 user.nextAction === Actions.ReadEmail
@@ -49,6 +49,23 @@ export default class MessageHandler {
         } catch (exception) {
             console.error(exception)
         }
+    }
+
+    async handleStartMessage(chatId, userId, user) {
+        await this.usersService.update(userId, chatId, {
+            currentAction: Actions.AskEmail,
+            nextAction: Actions.ReadEmail,
+            requestId: null,
+        })
+        const message = await this.botSenderService.sendMessage(
+            chatId,
+            locales[user.locale].start
+        )
+        await this.usersService.addMessageForDelete(
+            user.userId,
+            user.chatId,
+            message.message_id
+        )
     }
 
     async handleLocaleMessage(message, user) {

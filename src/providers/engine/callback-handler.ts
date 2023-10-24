@@ -30,10 +30,6 @@ export default class CallbackHandler {
                     data,
                     user
                 )
-            } else if (data === 'start') {
-                await this.handleEmailMessage(chatId, userId, user)
-            } else if (user.nextAction === Actions.ReadService) {
-                await this.handleReadService(chatId, userId, messageId, user)
             } else if (data.includes(Actions.AreaIsNotImportant)) {
                 await this.handleAreaIsNotImportant(user)
             } else if (data.includes(Actions.AreaNeedConsult)) {
@@ -165,28 +161,6 @@ export default class CallbackHandler {
                     ],
                 },
             }
-        )
-        await this.usersService.addMessageForDelete(
-            user.userId,
-            user.chatId,
-            message.message_id
-        )
-    }
-
-    async handleReadService(chatId, userId, messageId, user) {
-        await this.botSenderService.deleteMessageForUser(user)
-        await this.handleEmailMessage(chatId, userId, user)
-    }
-
-    async handleEmailMessage(chatId, userId, user) {
-        await this.usersService.update(userId, chatId, {
-            currentAction: Actions.AskEmail,
-            nextAction: Actions.ReadEmail,
-            requestId: null,
-        })
-        const message = await this.botSenderService.sendMessage(
-            chatId,
-            locales[user.locale].start
         )
         await this.usersService.addMessageForDelete(
             user.userId,
