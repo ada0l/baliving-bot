@@ -124,6 +124,12 @@ export default class MessageHandler {
                     ],
                     [
                         {
+                            text: locales[user.locale].editCategories,
+                            callback_data: 'edit-categories',
+                        },
+                    ],
+                    [
+                        {
                             text: locales[user.locale].editBeds,
                             callback_data: 'edit-beds',
                         },

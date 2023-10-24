@@ -31,6 +31,7 @@ export enum Actions {
     ReadEditLocale = 'read-edit-locale',
     ReadEditAreas = 'read-edit-areas',
     ReadEditBeds = 'read-edit-beds',
+    ReadEditCategories = 'read-edit-categoies',
     ReadEditMinPrice = 'read-edit-min-price',
     ReadEditPrice = 'read-edit-price',
 
@@ -38,6 +39,7 @@ export enum Actions {
     EditCity = 'edit-city',
     EditAreas = 'edit-areas',
     EditBeds = 'edit-beds',
+    EditCategories = 'edit-categories',
     EditMinPrice = 'edit-min-price',
     EditPrice = 'edit-price',
 }

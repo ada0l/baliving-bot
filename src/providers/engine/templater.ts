@@ -55,6 +55,10 @@ export class Templater {
         let template: string = locales[userLocale].details
         template = template.replace('${city}', request.city)
         template = template.replace('${areas}', requestAreas.join(','))
+        template = template.replace(
+            '${categories}',
+            request.categories.join(',')
+        )
         template = template.replace('${beds}', request.beds.join(','))
         template = template.replace('${price}', price)
         return template

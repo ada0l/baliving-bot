@@ -10,6 +10,7 @@ import { SelectionKeyboard } from './selection-keyboard'
 import { BotSenderService } from '../bot-sender.service'
 import { isValidUrl } from './utils'
 import city from 'src/config/city'
+import categories from 'src/config/categories'
 
 export default class CallbackHandler {
     constructor(
@@ -67,6 +68,21 @@ export default class CallbackHandler {
                         user
                     )
                 }
+            } else if (user.nextAction === Actions.ReadCategories) {
+                if (data === Actions.Finish) {
+                    await this.handleFinishCategoriesMessage(
+                        messageId,
+                        user,
+                        keyboard
+                    )
+                } else {
+                    await this.handleCategoriesMessage(
+                        messageId,
+                        data,
+                        keyboard,
+                        user
+                    )
+                }
             } else if (user.nextAction === Actions.ReadBeds) {
                 if (data === Actions.Finish) {
                     await this.handleFinishBedMessage(messageId, user, keyboard)
@@ -77,6 +93,7 @@ export default class CallbackHandler {
                 [
                     Actions.EditCity,
                     Actions.EditAreas,
+                    Actions.EditCategories,
                     Actions.EditBeds,
                     Actions.EditMinPrice,
                     Actions.EditPrice,
@@ -90,6 +107,12 @@ export default class CallbackHandler {
                             break
                         case Actions.EditAreas:
                             await this.handleEditAreasMessage(messageId, user)
+                            break
+                        case Actions.EditCategories:
+                            await this.handleEditCategoriesMessage(
+                                messageId,
+                                user
+                            )
                             break
                         case Actions.EditBeds:
                             await this.handleEditBedsMessage(messageId, user)
@@ -143,6 +166,22 @@ export default class CallbackHandler {
                         )
                     } else if (data.includes(Actions.ReadAreas)) {
                         await this.handleAreaMessage(
+                            messageId,
+                            data,
+                            keyboard,
+                            user
+                        )
+                    }
+                }
+                if (user.nextAction.includes(Actions.ReadEditCategories)) {
+                    if (data === Actions.Finish) {
+                        await this.handleFinishCategoriesMessage(
+                            messageId,
+                            user,
+                            keyboard
+                        )
+                    } else if (data.includes(Actions.ReadCategories)) {
+                        await this.handleCategoriesMessage(
                             messageId,
                             data,
                             keyboard,
@@ -475,7 +514,7 @@ export default class CallbackHandler {
               }
             : {
                   currentAction: Actions.WaitingForReply,
-                  nextAction: Actions.ReadBeds,
+                  nextAction: Actions.ReadCategories,
               }
         if (!user.requestId) {
             const request: any = await this.requestsService.create({
@@ -503,6 +542,51 @@ export default class CallbackHandler {
             await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
             const [keyboard, _] = SelectionKeyboard.create(
+                categories,
+                Actions.ReadCategories,
+                {
+                    text: locales[user.locale].next,
+                    callback_data: Actions.Finish,
+                },
+                request.categories ?? []
+            )
+            await this.botSenderService.sendMessage(
+                user.chatId,
+                locales[user.locale].categories,
+                {
+                    reply_markup: {
+                        inline_keyboard: keyboard,
+                    },
+                }
+            )
+        }
+    }
+
+    async handleFinishCategoriesMessage(messageId, user, keyboardCategories) {
+        await this.botSenderService.deleteMessage(user.chatId, messageId)
+        const isEdit = await this.botSenderService.isEditStage(user)
+        const actionData = isEdit
+            ? {
+                  currentAction: Actions.WaitingForReply,
+                  nextAction: Actions.Confirm,
+              }
+            : {
+                  currentAction: Actions.WaitingForReply,
+                  nextAction: Actions.ReadEditBeds,
+              }
+        await this.usersService.update(user.userId, user.chatId, actionData)
+        let userCategories = SelectionKeyboard.getSelected(keyboardCategories)
+        console.log(userCategories)
+        const request: any = await this.requestsService.update(
+            +user.requestId,
+            {
+                categories: userCategories,
+            }
+        )
+        if (isEdit) {
+            await this.botSenderService.sendStartSearchingPreview(user, request)
+        } else {
+            const [keyboard, _] = SelectionKeyboard.create(
                 beds,
                 Actions.ReadBeds,
                 {
@@ -520,7 +604,51 @@ export default class CallbackHandler {
                     },
                 }
             )
+            await this.usersService.update(user.userId, user.chatId, {
+                nextAction: Actions.ReadBeds,
+            })
         }
+    }
+
+    async handleCategoriesMessage(messageId, data, keyboard, user) {
+        const userCaregories: string = data.substring(
+            `${Actions.ReadCategories} `.length
+        )
+        const [newKeyboard, _] = SelectionKeyboard.proccess(
+            keyboard,
+            userCaregories,
+            categories,
+            { text: locales[user.locale].next, callback_data: Actions.Finish }
+        )
+        await this.botSenderService.editMessageReplyMarkup(
+            { inline_keyboard: newKeyboard },
+            { chat_id: user.chatId, message_id: messageId }
+        )
+    }
+
+    async handleEditCategoriesMessage(messageId, user) {
+        const request: any = await this.requestsService.find(+user.requestId)
+        await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.ReadEditCategories,
+        })
+        const [keyboard, _] = SelectionKeyboard.create(
+            categories,
+            Actions.ReadCategories,
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
+            request != null && request.categories != null
+                ? request.categories
+                : []
+        )
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            locales[user.locale].categories,
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
+        )
     }
 
     async handleBedMessage(messageId, data, keyboard, user) {
