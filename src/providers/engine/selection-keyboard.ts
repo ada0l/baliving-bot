@@ -1,18 +1,31 @@
 export class SelectionKeyboard {
     static CHOSE = '✅'
 
-    static proccess(keyboard, clickedText, data, finishItem, size = 2) {
+    static proccess(
+        keyboard,
+        clickedText,
+        data,
+        finishItem,
+        size = 2,
+        multi = true
+    ) {
         let keyboard1d = this.convertToOneDimension(keyboard).slice(
             0,
             data.length
         )
+
         let anySelected = false
+
         keyboard1d.forEach((keyboardItem, index, arr) => {
             if (this.isEqual(keyboardItem, clickedText)) {
                 if (this.isSelected(keyboardItem)) {
                     arr[index] = this.unselect(keyboardItem)
                 } else {
                     arr[index] = this.select(keyboardItem)
+                }
+            } else {
+                if (!multi && this.isSelected(keyboardItem)) {
+                    arr[index] = this.unselect(keyboardItem)
                 }
             }
             if (this.isSelected(arr[index])) {
@@ -34,8 +47,12 @@ export class SelectionKeyboard {
         callback_data,
         finishItem = null,
         alreadySelected = [],
-        size = 2
+        size = 2,
+        multi = true
     ) {
+        if (!multi) {
+            alreadySelected = alreadySelected.slice(0, 1)
+        }
         console.debug(alreadySelected)
         let keyboard: any = []
         let anySelected = false
@@ -51,7 +68,7 @@ export class SelectionKeyboard {
             }
             keyboard.push(keyboardItem)
         })
-        const reshapedKeyboard = this.sliceIntoChunks(keyboard, 2)
+        const reshapedKeyboard = this.sliceIntoChunks(keyboard, size)
 
         if (anySelected && finishItem) {
             reshapedKeyboard.push([finishItem])
@@ -91,7 +108,10 @@ export class SelectionKeyboard {
     }
 
     private static isEqual(keyboardItem, clickedText) {
-        return keyboardItem.text.includes(clickedText)
+        return (
+            keyboardItem.text === `${SelectionKeyboard.CHOSE} ${clickedText}` ||
+            keyboardItem.text === clickedText
+        )
     }
 
     private static isSelected(keyboardItem) {
