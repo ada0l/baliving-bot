@@ -112,6 +112,12 @@ export default class MessageHandler {
                 inline_keyboard: [
                     [
                         {
+                            text: locales[user.locale].editCity,
+                            callback_data: 'edit-city',
+                        },
+                    ],
+                    [
+                        {
                             text: locales[user.locale].editAreas,
                             callback_data: 'edit-areas',
                         },
@@ -306,13 +312,13 @@ export default class MessageHandler {
             ) {
                 await this.usersService.update(user.userId, user.chatId, {
                     currentAction: Actions.WaitingForReply,
-                    nextAction: Actions.ReadAreas,
+                    nextAction: Actions.ReadCity,
                     isTrial: Database.isTrialUser(databaseUser),
                 })
                 const request: any = await this.requestsService.find(
                     +user.requestId
                 )
-                await this.botSenderService.sendAreaKeyboard(user, request)
+                await this.botSenderService.sendCityKeyboard(user, request)
             } else {
                 await this.usersService.update(user.userId, user.chatId, {
                     currentAction: Actions.WaitingForReply,

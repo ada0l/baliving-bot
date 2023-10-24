@@ -12,6 +12,12 @@ export enum Actions {
     StartSearch = 'start-search',
     StartSearchNext = 'start-search-next',
 
+    AskCity = 'ask-city',
+    ReadCity = 'read-city',
+
+    AskCategories = 'ask-categoies',
+    ReadCategories = 'read-categoies',
+
     AskEmail = 'ask-email',
     ReadEmail = 'read-email',
 
@@ -21,6 +27,7 @@ export enum Actions {
     ReadMinPrice = 'read-min-price',
     ReadPrice = 'read-price',
 
+    ReadEditCity = 'read-edit-city',
     ReadEditLocale = 'read-edit-locale',
     ReadEditAreas = 'read-edit-areas',
     ReadEditBeds = 'read-edit-beds',
@@ -28,6 +35,7 @@ export enum Actions {
     ReadEditPrice = 'read-edit-price',
 
     // use it to summarize read-edit and read
+    EditCity = 'edit-city',
     EditAreas = 'edit-areas',
     EditBeds = 'edit-beds',
     EditMinPrice = 'edit-min-price',

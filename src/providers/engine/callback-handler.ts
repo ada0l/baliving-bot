@@ -9,6 +9,7 @@ import { Actions } from './actions'
 import { SelectionKeyboard } from './selection-keyboard'
 import { BotSenderService } from '../bot-sender.service'
 import { isValidUrl } from './utils'
+import city from 'src/config/city'
 
 export default class CallbackHandler {
     constructor(
@@ -36,6 +37,21 @@ export default class CallbackHandler {
                 await this.handleAreaNeedConsult(user)
             } else if (data.includes(Actions.AskArea)) {
                 await this.handleAskArea(user)
+            } else if (user.nextAction === Actions.ReadCity) {
+                if (data === Actions.Finish) {
+                    await this.handleFinishCityMessage(
+                        messageId,
+                        user,
+                        keyboard
+                    )
+                } else {
+                    await this.handleCityMessage(
+                        messageId,
+                        data,
+                        keyboard,
+                        user
+                    )
+                }
             } else if (user.nextAction === Actions.ReadAreas) {
                 if (data === Actions.Finish) {
                     await this.handleFinishAreaMessage(
@@ -59,6 +75,7 @@ export default class CallbackHandler {
                 }
             } else if (
                 [
+                    Actions.EditCity,
                     Actions.EditAreas,
                     Actions.EditBeds,
                     Actions.EditMinPrice,
@@ -68,6 +85,9 @@ export default class CallbackHandler {
                 const isValid: boolean = await this.isValidUser(user)
                 if (isValid) {
                     switch (data) {
+                        case Actions.EditCity:
+                            await this.handleEditCityMessage(messageId, user)
+                            break
                         case Actions.EditAreas:
                             await this.handleEditAreasMessage(messageId, user)
                             break
@@ -98,6 +118,22 @@ export default class CallbackHandler {
                 user.nextAction &&
                 user.nextAction.includes('read-edit')
             ) {
+                if (user.nextAction.includes(Actions.ReadEditCity)) {
+                    if (data === Actions.Finish) {
+                        await this.handleFinishCityMessage(
+                            messageId,
+                            user,
+                            keyboard
+                        )
+                    } else if (data.includes(Actions.ReadCity)) {
+                        await this.handleCityMessage(
+                            messageId,
+                            data,
+                            keyboard,
+                            user
+                        )
+                    }
+                }
                 if (user.nextAction.includes(Actions.ReadEditAreas)) {
                     if (data === Actions.Finish) {
                         await this.handleFinishAreaMessage(
@@ -167,6 +203,15 @@ export default class CallbackHandler {
             user.chatId,
             message.message_id
         )
+    }
+
+    async handleEditCityMessage(messageId, user) {
+        const request: any = await this.requestsService.find(+user.requestId)
+        await this.usersService.update(user.userId, user.chatId, {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.ReadEditCity,
+        })
+        await this.botSenderService.sendCityKeyboard(user, request)
     }
 
     async handleEditAreasMessage(messageId, user) {
@@ -443,17 +488,17 @@ export default class CallbackHandler {
         } else {
             await this.usersService.update(user.userId, user.chatId, actionData)
         }
+        let request: any = await this.requestsService.find(+user.requestId)
         let userAreas = SelectionKeyboard.getSelected(keyboardAreas).map(
             (area) => {
-                return areas['ru'][areas[user.locale].indexOf(area)]
+                return areas['ru'][request.city][
+                    areas[user.locale][request.city].indexOf(area)
+                ]
             }
         )
-        const request: any = await this.requestsService.update(
-            +user.requestId,
-            {
-                areas: userAreas,
-            }
-        )
+        request = await this.requestsService.update(+user.requestId, {
+            areas: userAreas,
+        })
         if (isEdit) {
             await this.botSenderService.sendStartSearchingPreview(user, request)
         } else {
@@ -494,13 +539,63 @@ export default class CallbackHandler {
         )
     }
 
+    async handleFinishCityMessage(messageId, user, keyboardAreas) {
+        await this.botSenderService.deleteMessage(user.chatId, messageId)
+        const isEdit = await this.botSenderService.isEditStage(user)
+        const actionData = {
+            currentAction: Actions.WaitingForReply,
+            nextAction: Actions.ReadAreas,
+        }
+        if (!user.requestId) {
+            const request: any = await this.requestsService.create({
+                userId: user.id,
+            })
+            user = await this.usersService.update(user.userId, user.chatId, {
+                ...actionData,
+                requestId: request.id,
+            })
+        } else {
+            await this.usersService.update(user.userId, user.chatId, actionData)
+        }
+        let userCity = SelectionKeyboard.getSelected(keyboardAreas)[0]
+        const request: any = await this.requestsService.update(
+            +user.requestId,
+            {
+                city: userCity,
+            }
+        )
+        if (isEdit) {
+            await this.handleAskArea(user)
+        } else {
+            await this.botSenderService.sendAreaKeyboard(user, request)
+        }
+    }
+
+    async handleCityMessage(messageId, data, keyboard, user) {
+        console.debug(keyboard)
+        const city_: string = data.substring(`${Actions.ReadCity} `.length)
+        const [newKeyboard, anySelected] = SelectionKeyboard.proccess(
+            keyboard,
+            city_,
+            city,
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
+            1,
+            false
+        )
+        await this.botSenderService.editMessageReplyMarkup(
+            { inline_keyboard: newKeyboard },
+            { chat_id: user.chatId, message_id: messageId }
+        )
+    }
+
     async handleAreaMessage(messageId, data, keyboard, user) {
         console.debug(keyboard)
         const area: string = data.substring(`${Actions.ReadAreas} `.length)
+        const request: any = await this.requestsService.find(+user.requestId)
         const [newKeyboard, anySelected] = SelectionKeyboard.proccess(
             keyboard,
             area,
-            areas[user.locale],
+            areas[user.locale][request.city],
             { text: locales[user.locale].next, callback_data: Actions.Finish }
         )
         if (!anySelected) {

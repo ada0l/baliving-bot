@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import areas from 'src/config/areas'
+import city from 'src/config/city'
 import locales from 'src/config/locales'
 import { RequestsService } from 'src/requests/requests.service'
 import { UsersService } from 'src/users/users.service'
@@ -50,15 +51,39 @@ export class BotSenderService {
         return request && request.isFilled()
     }
 
+    async sendCityKeyboard(user, request) {
+        const selectedCity = request != null ? [request.city] : []
+        const [keyboard, anySelected] = SelectionKeyboard.create(
+            city,
+            Actions.ReadCity,
+            { text: locales[user.locale].next, callback_data: Actions.Finish },
+            selectedCity,
+            1,
+            false
+        )
+        console.log(keyboard)
+        const botMessage = await this.sendMessage(
+            user.chatId,
+            locales[user.locale].chooseCity,
+            {
+                reply_markup: {
+                    inline_keyboard: keyboard,
+                },
+            }
+        )
+    }
+
     async sendAreaKeyboard(user, request) {
+        const city = request != null ? request.city : 'Бали'
         const selectedAreas =
-            request != null
+            request != null && request.areas != null
                 ? request.areas.map(
-                      (area) => areas[user.locale][areas['ru'].indexOf(area)]
+                      (area) =>
+                          areas[user.locale][areas['ru'][city].indexOf(area)]
                   )
                 : []
         const [keyboard, anySelected] = SelectionKeyboard.create(
-            areas[user.locale],
+            areas[user.locale][city],
             Actions.ReadAreas,
             { text: locales[user.locale].next, callback_data: Actions.Finish },
             selectedAreas

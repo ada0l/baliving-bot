@@ -39,7 +39,9 @@ export class Templater {
         let requestAreas: any = []
         if (userLocale === 'en') {
             request.areas.forEach((area) => {
-                requestAreas.push(areas[userLocale][areas['ru'].indexOf(area)])
+                requestAreas.push(
+                    areas[userLocale][areas['ru'][request.city].indexOf(area)]
+                )
             })
         } else {
             requestAreas = request.areas
@@ -51,6 +53,7 @@ export class Templater {
                 : request.price
 
         let template: string = locales[userLocale].details
+        template = template.replace('${city}', request.city)
         template = template.replace('${areas}', requestAreas.join(','))
         template = template.replace('${beds}', request.beds.join(','))
         template = template.replace('${price}', price)
