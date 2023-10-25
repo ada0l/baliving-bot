@@ -52,11 +52,14 @@ export default {
             'Возможно, Ты можешь найти что-нибудь еще',
         showTheFollowingAds: 'Показать следующие объявления',
         finalMessage:
-            'Район: ${areas}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
+            'Город: ${city}\nРайон: ${areas}\nКатегория: ${categories}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
         link: 'Ссылка',
         write: 'Написать арендодателю',
-        catalog_url:
-            'https://baliving.ru/arenda-zhilya-na-bali-na-dlitelnyy-srok?filters499852640=Popup__find__${id}',
+        catalog_url: {
+            Бали: 'https://baliving.ru/arenda-zhilya-na-bali-na-dlitelnyy-srok?filters499852640=Popup__find__${id}',
+            Пхукет: 'https://baliving.ru/phuket/katalog?filters653318079=ad_id__eq__${id}',
+            Дубай: 'https://baliving.ru/dubai/villa-for-a-month?filters598370973=ad_id__eq__${id}',
+        },
     },
     en: {
         language: '🇺🇸English',

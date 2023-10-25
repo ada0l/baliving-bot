@@ -409,7 +409,9 @@ export default class CallbackHandler {
         })()
         console.debug(isNext)
         const databaseProperties: any = await Database.findNewProperties(
+            request.city,
             request.areas,
+            request.categories,
             request.beds,
             request.minPrice,
             request.price,

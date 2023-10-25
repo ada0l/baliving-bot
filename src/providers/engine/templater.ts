@@ -10,8 +10,16 @@ export class Templater {
             template = `${property.get('Title eng')}\n${template}`
         }
         let templateArea: string = ''
+        const city_ = property.get('Город')
+        template = template.replace('${city}', city_)
+        template = template.replace('${categories}', property.get('Категория'))
         if (userLocale === 'ru') {
-            templateArea = property.get('Район')
+            templateArea = String(
+                property.get('Район') ||
+                    property.get('Район Пхукет') ||
+                    property.get('Район Дубай') ||
+                    'Неизвестно'
+            )
         } else if (userLocale === 'en') {
             templateArea = property.get('District')
         }
@@ -24,7 +32,7 @@ export class Templater {
             '${price}',
             property.get('Цена долларов в месяц')
         )
-        let link = locales[userLocale].catalog_url.replace(
+        let link = locales[userLocale].catalog_url[city_].replace(
             '${id}',
             property.get('ad_id')
         )

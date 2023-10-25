@@ -68,7 +68,9 @@ export class TasksService {
                     : []
                 console.debug(properties)
                 Database.findNewProperties(
+                    request.city,
                     request.areas,
+                    request.categories,
                     request.beds,
                     request.minPrice,
                     request.price,

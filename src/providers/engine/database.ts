@@ -32,19 +32,26 @@ export default class Database {
         return databaseUser.get('Доступ действителен') === '✅'
     }
 
-    static addAreasThatIncludeOther(areas) {
+    static addAreasThatIncludeOther(city, areas) {
         const set = new Set()
-        areas.forEach((area) => {
-            set.add(area)
-            enteringAreas[area].forEach((includedArea) => {
-                set.add(includedArea)
+        try {
+            areas.forEach((area) => {
+                set.add(area)
+                enteringAreas[city][area].forEach((includedArea) => {
+                    set.add(includedArea)
+                })
             })
-        })
-        return Array.from(set)
+            return Array.from(set)
+        } catch (ex) {
+            console.log(`Exception entering of areas: ${ex}`)
+            return areas
+        }
     }
 
     static generateFilterForProperties(
+        city,
         areas,
+        categories,
         beds,
         minPrice,
         price,
@@ -54,44 +61,27 @@ export default class Database {
         // for arrays as contain or in. Therefore, the search for the number is
         // performed by the string with the number treated with commas
         const propertiesFormula = `NOT(SEARCH(CONCATENATE(",", {Номер} ,","), ',${properties},'))`
-        const areas_ = this.addAreasThatIncludeOther(areas)
+        const areas_ = this.addAreasThatIncludeOther(city, areas)
+        const areaFieldName = city == 'Бали' ? 'Район' : `Район ${city}`
         console.log(areas_)
         return `
         AND(
             ${properties.length ? propertiesFormula : 'TRUE()'},
             {Модерация},
-            SEARCH({Район}, '${areas_}'),
+            SEARCH({${areaFieldName}}, '${areas_}'),
+            SEARCH({Категория}, '${categories}'),
             SEARCH({Количество спален}, '${beds}'),
             {Цена долларов в месяц} >= ${minPrice},
             {Цена долларов в месяц} <= ${price},
-            {Город} = 'Бали'
+            {Город} = '${city}'
         )
         `
     }
 
-    static async findProperties(areas, beds, minPrice, price, limit = 3) {
-        const airtable = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-        try {
-            return await airtable
-                .base(process.env.AIRTABLE_BASE_ID)
-                .table(process.env.AIRTABLE_PROPERTIES_TABLE_ID)
-                .select({
-                    filterByFormula: this.generateFilterForProperties(
-                        areas,
-                        beds,
-                        minPrice,
-                        price
-                    ),
-                    maxRecords: limit,
-                })
-                .all()
-        } catch (exception) {
-            console.error(`issue detected ...\n${exception}`)
-        }
-    }
-
     static async findNewProperties(
+        city,
         areas,
+        categories,
         beds,
         minPrice,
         price,
@@ -99,13 +89,26 @@ export default class Database {
         limit = 3
     ) {
         const airtable = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
+        console.log(
+            this.generateFilterForProperties(
+                city,
+                areas,
+                categories,
+                beds,
+                minPrice,
+                price,
+                properties
+            )
+        )
         try {
             return await airtable
                 .base(process.env.AIRTABLE_BASE_ID)
                 .table(process.env.AIRTABLE_PROPERTIES_TABLE_ID)
                 .select({
                     filterByFormula: this.generateFilterForProperties(
+                        city,
                         areas,
+                        categories,
                         beds,
                         minPrice,
                         price,
