@@ -79,7 +79,8 @@ export class BotSenderService {
             request != null && request.areas != null
                 ? request.areas.map(
                       (area) =>
-                          areas[user.locale][areas['ru'][city].indexOf(area)]
+                          areas[user.locale][areas['ru'][city].indexOf(area)] ||
+                          area
                   )
                 : []
         const [keyboard, anySelected] = SelectionKeyboard.create(
