@@ -18,18 +18,18 @@ export class TasksService {
         private readonly botSenderService: BotSenderService
     ) {}
 
-    @Cron(CronExpression.EVERY_10_MINUTES)
-    handleWarning() {
-        this.usersService.findForWarning().then((users) => {
-            users.forEach((user) => {
-                this.botSenderService.sendMessage(
-                    user.chatId,
-                    'КАК ДЕЛ? ЧЕ ДЕЛ?'
-                )
-            })
-            this.usersService.markAsWarned(users)
-        })
-    }
+    // @Cron(CronExpression.EVERY_10_MINUTES)
+    // handleWarning() {
+    //     this.usersService.findForWarning().then((users) => {
+    //         users.forEach((user) => {
+    //             this.botSenderService.sendMessage(
+    //                 user.chatId,
+    //                 'КАК ДЕЛ? ЧЕ ДЕЛ?'
+    //             )
+    //         })
+    //         this.usersService.markAsWarned(users)
+    //     })
+    // }
 
     @Cron('0 0 * * * *')
     handleCron() {
