@@ -730,16 +730,16 @@ export default class CallbackHandler {
         )
         if (!anySelected) {
             console.debug('add area is not important')
-            newKeyboard.push([
-                {
-                    text: locales[user.locale].areaIsNotImportant,
-                    callback_data: Actions.AreaIsNotImportant,
-                },
-                {
-                    text: locales[user.locale].areaNeedConsult,
-                    callback_data: Actions.AreaNeedConsult,
-                },
-            ])
+            // newKeyboard.push([
+            //     {
+            //         text: locales[user.locale].areaIsNotImportant,
+            //         callback_data: Actions.AreaIsNotImportant,
+            //     },
+            //     {
+            //         text: locales[user.locale].areaNeedConsult,
+            //         callback_data: Actions.AreaNeedConsult,
+            //     },
+            // ])
         }
         await this.botSenderService.editMessageReplyMarkup(
             { inline_keyboard: newKeyboard },

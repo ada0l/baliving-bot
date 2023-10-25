@@ -90,17 +90,17 @@ export class BotSenderService {
             selectedAreas
         )
         if (!anySelected) {
-            console.debug('add area is not important')
-            keyboard.push([
-                {
-                    text: locales[user.locale].areaIsNotImportant,
-                    callback_data: Actions.AreaIsNotImportant,
-                },
-                {
-                    text: locales[user.locale].areaNeedConsult,
-                    callback_data: Actions.AreaNeedConsult,
-                },
-            ])
+            // console.debug('add area is not important')
+            // keyboard.push([
+            //     {
+            //         text: locales[user.locale].areaIsNotImportant,
+            //         callback_data: Actions.AreaIsNotImportant,
+            //     },
+            //     {
+            //         text: locales[user.locale].areaNeedConsult,
+            //         callback_data: Actions.AreaNeedConsult,
+            //     },
+            // ])
         }
         const botMessage = await this.sendMessage(
             user.chatId,
