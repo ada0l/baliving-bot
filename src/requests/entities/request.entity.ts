@@ -20,10 +20,14 @@ export class Request {
     @Column({ name: 'user_id', type: 'bigint' })
     userId: number
 
-    @Column({ name: 'city', default: null })
+    @Column({ name: 'city', default: 'Бали' })
     city: string
 
-    @Column({ name: 'categories', type: 'simple-array', default: null })
+    @Column({
+        name: 'categories',
+        type: 'simple-array',
+        default: 'Вилла,Комната,Гестхаус,Апартаменты,Дом',
+    })
     categories: string
 
     @Column({ name: 'areas', type: 'simple-array', default: null })
