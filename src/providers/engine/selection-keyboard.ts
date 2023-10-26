@@ -1,6 +1,22 @@
 export class SelectionKeyboard {
     static CHOSE = '✅'
 
+    static select_all(keyboard, data, size = 2, multi = true) {
+        let keyboard1d = this.convertToOneDimension(keyboard).slice(
+            0,
+            data.length
+        )
+
+        keyboard1d.forEach((keyboardItem, index, arr) => {
+            if (!this.isSelected(keyboardItem)) {
+                arr[index] = this.select(keyboardItem)
+            }
+        })
+
+        let keyboardReshaped = this.sliceIntoChunks(keyboard1d, size)
+        return keyboardReshaped
+    }
+
     static proccess(
         keyboard,
         clickedText,

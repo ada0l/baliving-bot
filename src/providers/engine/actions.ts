@@ -42,4 +42,6 @@ export enum Actions {
     EditCategories = 'edit-categories',
     EditMinPrice = 'edit-min-price',
     EditPrice = 'edit-price',
+
+    SelectAllAreas = 'select-all-areas',
 }

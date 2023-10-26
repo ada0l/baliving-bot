@@ -89,6 +89,12 @@ export class BotSenderService {
             { text: locales[user.locale].next, callback_data: Actions.Finish },
             selectedAreas
         )
+        keyboard.push([
+            {
+                text: locales[user.locale].selectAll,
+                callback_data: Actions.SelectAllAreas,
+            },
+        ])
         if (!anySelected) {
             // console.debug('add area is not important')
             // keyboard.push([

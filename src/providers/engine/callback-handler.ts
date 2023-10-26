@@ -38,6 +38,8 @@ export default class CallbackHandler {
                 await this.handleAreaNeedConsult(user)
             } else if (data.includes(Actions.AskArea)) {
                 await this.handleAskArea(user)
+            } else if (data.includes(Actions.SelectAllAreas)) {
+                await this.handleSelectAllAreas(messageId, user, keyboard)
             } else if (user.nextAction === Actions.ReadCity) {
                 if (data === Actions.Finish) {
                     await this.handleFinishCityMessage(
@@ -251,6 +253,24 @@ export default class CallbackHandler {
             nextAction: Actions.ReadEditCity,
         })
         await this.botSenderService.sendCityKeyboard(user, request)
+    }
+
+    async handleSelectAllAreas(messageId, user, keyboard) {
+        const request: any = await this.requestsService.find(+user.requestId)
+        const newKeyboard = SelectionKeyboard.select_all(
+            keyboard,
+            areas[user.locale][request.city]
+        )
+        newKeyboard.push([
+            {
+                text: locales[user.locale].next,
+                callback_data: Actions.Finish,
+            },
+        ])
+        await this.botSenderService.editMessageReplyMarkup(
+            { inline_keyboard: newKeyboard },
+            { chat_id: user.chatId, message_id: messageId }
+        )
     }
 
     async handleEditAreasMessage(messageId, user) {
@@ -728,6 +748,12 @@ export default class CallbackHandler {
             areas[user.locale][request.city],
             { text: locales[user.locale].next, callback_data: Actions.Finish }
         )
+        newKeyboard.push([
+            {
+                text: locales[user.locale].selectAll,
+                callback_data: Actions.SelectAllAreas,
+            },
+        ])
         if (!anySelected) {
             console.debug('add area is not important')
             // newKeyboard.push([
