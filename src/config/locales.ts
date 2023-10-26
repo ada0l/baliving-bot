@@ -56,7 +56,7 @@ export default {
         link: 'Ссылка',
         write: 'Написать арендодателю',
         catalog_url: {
-            Бали: 'https://baliving.ru/arenda-zhilya-na-bali-na-dlitelnyy-srok?filters499852640=Popup__find__${id}',
+            Бали: 'https://baliving.ru/villa-month?filters583766972=ad_id__eq__${id}',
             Пхукет: 'https://baliving.ru/phuket/katalog?filters653318079=ad_id__eq__${id}',
             Дубай: 'https://baliving.ru/dubai/villa-for-a-month?filters598370973=ad_id__eq__${id}',
         },
