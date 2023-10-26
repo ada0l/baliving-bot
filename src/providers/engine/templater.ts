@@ -10,8 +10,16 @@ export class Templater {
             template = `${property.get('Title eng')}\n${template}`
         }
         let templateArea: string = ''
+        const city_ = property.get('Город')
+        template = template.replace('${city}', city_)
+        template = template.replace('${categories}', property.get('Категория'))
         if (userLocale === 'ru') {
-            templateArea = property.get('Район')
+            templateArea = String(
+                property.get('Район') ||
+                    property.get('Район Пхукет') ||
+                    property.get('Район Дубай') ||
+                    'Неизвестно'
+            )
         } else if (userLocale === 'en') {
             templateArea = property.get('District')
         }
@@ -24,7 +32,10 @@ export class Templater {
             '${price}',
             property.get('Цена долларов в месяц')
         )
-        let link = locales[userLocale].catalog_url.replace('${id}', property.get('ad_id'))
+        let link = locales[userLocale].catalog_url[city_].replace(
+            '${id}',
+            property.get('ad_id')
+        )
         template = template.replace(
             '${link}',
             `<a href="${link}">${locales[userLocale].link}</a>`
@@ -36,7 +47,9 @@ export class Templater {
         let requestAreas: any = []
         if (userLocale === 'en') {
             request.areas.forEach((area) => {
-                requestAreas.push(areas[userLocale][areas['ru'].indexOf(area)])
+                requestAreas.push(
+                    areas[userLocale][areas['ru'][request.city].indexOf(area)]
+                )
             })
         } else {
             requestAreas = request.areas
@@ -48,7 +61,12 @@ export class Templater {
                 : request.price
 
         let template: string = locales[userLocale].details
+        template = template.replace('${city}', request.city)
         template = template.replace('${areas}', requestAreas.join(','))
+        template = template.replace(
+            '${categories}',
+            request.categories.join(',')
+        )
         template = template.replace('${beds}', request.beds.join(','))
         template = template.replace('${price}', price)
         return template

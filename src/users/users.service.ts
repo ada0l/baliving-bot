@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { Repository } from 'typeorm'
+import { LessThanOrEqual, Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
 import { User } from './entities/user.entity'
 
@@ -26,6 +26,23 @@ export class UsersService {
         }
     }
 
+    async findForWarning() {
+        return await this.usersRepository.find({
+            where: {
+                warningTime: LessThanOrEqual(
+                    new Date(Date.now() + 60 * 10 * 1000) // after 10 minutes
+                ),
+            },
+        })
+    }
+
+    async markAsWarned(users: Array<User>) {
+        users.forEach((user: User) => {
+            user.warningTime = null
+        })
+        return await this.usersRepository.save(users)
+    }
+
     async find() {
         return await this.usersRepository.find()
     }
@@ -37,5 +54,21 @@ export class UsersService {
 
     async delete(userId: number) {
         return await this.usersRepository.delete({ userId })
+    }
+
+    async addMessageForDelete(
+        userId: number,
+        chatId: number,
+        messageId: number
+    ) {
+        const user: User = await this.findOne(userId, chatId)
+        user.messageForDelete.push(messageId)
+        return await this.usersRepository.save({ ...user })
+    }
+
+    async clearMessageForDelete(userId: number, chatId: number) {
+        const user: User = await this.findOne(userId, chatId)
+        user.messageForDelete = []
+        return await this.usersRepository.save({ ...user })
     }
 }

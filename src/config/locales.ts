@@ -2,6 +2,12 @@ export default {
     askLocale: 'Выберите язык интерфейса.\nSelect interface language.',
     ru: {
         language: '🇷🇺Русский',
+        howWorkService:
+            '- КАЖДЫЙ ДЕНЬ собираем предложения по жилью на Бали со всех площадок - вы получаете более 1000 актуальных вариантов\n- КАЖДЫЙ ДЕНЬ связываемся с собственниками и уточняем актуальность - для вас стоимость на сайте БЕЗ комиссий\n- Каждый собственник, если немного постараться, готов к торгу, иногда мы можем даже помочь (спросите меня "как"? 😉)\n- Мы предоставляем все варианты в одном месте и в удобном формате, вам не нужно искать на разных площадках и бояться упустить лучшее жилье',
+        haveRead: 'Ознакомился',
+        articleAboutChoosingArea: 'Статья о выборе района',
+        areaIsNotImportant: 'Район не важен',
+        areaNeedConsult: 'Нужна консультация',
         photos: 'Фотографии объекта',
         start: 'Введите, пожалуйста, почту, которую вы указали при регистрации',
         notFound:
@@ -17,6 +23,10 @@ export default {
         checkAccess: 'Проверить подписку',
         chooseAreas:
             'Укажите районы, где рассматриваете жилье. Выберите несколько наиболее предпочтительных',
+        selectAll: 'Выбрать все',
+        chooseCity: 'Укажите локацию, где рассматриваете жилье',
+        categories:
+            'Укажите категорию объявления. Выберите несколько наиболее предпочтительных',
         numberOfBeds:
             'Укажите количество спальных комнат. Выберите несколько наиболее предпочтительных',
         minPrice:
@@ -24,11 +34,13 @@ export default {
         price: 'Укажите верхнюю границу стоимости за месяц в долларах.\n\nВнимание!\nВведите только цифры.',
         finish: 'Запомнил.\nПроверьте, пожалуйста, данные. Вы всегда можете отредактировать свои предпочтения нажав <strong>Меню</strong> ➡️ <strong>Редактировать</strong>',
         details:
-            'Районы: ${areas}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц',
+            'Локация: ${city}\nРайоны: ${areas}\nКатегории: ${categories}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц',
         agree: 'Все верно! Можно начинать поиск',
         menu: 'Меню',
         choseEditOption: 'Выберите то, что необходимо сделать',
+        editCity: 'Редактировать локацию',
         editAreas: 'Редактировать районы',
+        editCategories: 'Редактировать категории',
         editBeds: 'Редактировать количество спален',
         editMinPrice: 'Редактировать стоимость от',
         editPrice: 'Редактировать стоимость до',
@@ -36,16 +48,27 @@ export default {
             'К сожалению, сейчас я ничего не нашел по вашему запросу.\n\nЯ буду присылать вам новые предложения, как только они появятся!\n\nТакже вы можете изменить параметры подбора, нажав Меню.',
         foundOptions:
             'Сейчас я нашел для вас такие варианты. Я буду присылать вам новые предложения по вашим параметрам, как только они появятся!\n\nТакже вы можешь редактировать запрос, нажав Меню.',
-        maybeYouCanFindSomethingElse: "Возможно, Ты можешь найти что-нибудь еще",
-        showTheFollowingAds: "Показать следующие объявления",
+        maybeYouCanFindSomethingElse:
+            'Возможно, Ты можешь найти что-нибудь еще',
+        showTheFollowingAds: 'Показать следующие объявления',
         finalMessage:
-            'Район: ${areas}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
+            'Локация: ${city}\nРайон: ${areas}\nКатегория: ${categories}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
         link: 'Ссылка',
         write: 'Написать арендодателю',
-        catalog_url: 'https://baliving.ru/villa-month?filters583766972=ad_id__eq__${id}'
+        catalog_url: {
+            Бали: 'https://baliving.ru/arenda-zhilya-na-bali-na-dlitelnyy-srok?filters499852640=Popup__find__${id}',
+            Пхукет: 'https://baliving.ru/phuket/katalog?filters653318079=ad_id__eq__${id}',
+            Дубай: 'https://baliving.ru/dubai/villa-for-a-month?filters598370973=ad_id__eq__${id}',
+        },
     },
     en: {
         language: '🇺🇸English',
+        howWorkService:
+            '- EVERY DAY we collect housing offers in Bali from all sites - you get more than 1000 current options\n- EVERY DAY we contact the owners and update the relevance - for you the cost on the site NO fees\n- Each owner, if you try a little, is ready to trade, sometimes we can even help (ask me "how"? 😉)\n- We provide all options in one place and in a convenient format, you do not need to look at different sites and be afraid to miss the best housing',
+        haveRead: 'I have read',
+        articleAboutChoosingArea: 'Article about choosing a area',
+        areaIsNotImportant: 'The area is not important',
+        areaNeedConsult: 'Need to consult',
         photos: 'Photos of the property',
         start: 'Please enter the email you provided during registration',
         notFound:
@@ -80,12 +103,13 @@ export default {
             "Sorry, I didn't find anything matching your search right now.\n\nI'll send you new suggestions as soon as they become available!\n\nYou can also change your search options by pressing Menu.",
         foundOptions:
             "Now I found these options for you. I'll send you new suggestions for your options as soon as they become available!\n\nYou can also edit the request by pressing Menu.",
-        maybeYouCanFindSomethingElse: "Maybe you can find something else",
-        showTheFollowingAds: "Show the following ads",
+        maybeYouCanFindSomethingElse: 'Maybe you can find something else',
+        showTheFollowingAds: 'Show the following ads',
         finalMessage:
             'Location: ${areas}\nNumber of bedrooms: ${beds}\nPrice: ${price}$/month\n\n${link}',
         link: 'Link',
         write: 'Write to landlord',
-        catalog_url: 'https://baliving.ru/villa-month?filters583766972=ad_id__eq__${id}'
+        catalog_url:
+            'https://baliving.ru/en/long-term-rentals-housing-in-bali?filters511398389=Popup+personal__find__${id}',
     },
 }

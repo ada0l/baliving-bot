@@ -1,4 +1,5 @@
 import Airtable from 'airtable'
+import enteringAreas from '../../config/enteringAreas'
 
 require('dotenv').config()
 
@@ -19,8 +20,38 @@ export default class Database {
         }
     }
 
+    static isTrialUser(databaseUser) {
+        return databaseUser.get('TRIAL') === 'TRIAL'
+    }
+
+    static isVIPUser(databaseUser) {
+        return databaseUser.get('Plan') === 'VIP'
+    }
+
+    static isUserAccessValid(databaseUser) {
+        return databaseUser.get('Доступ действителен') === '✅'
+    }
+
+    static addAreasThatIncludeOther(city, areas) {
+        const set = new Set()
+        try {
+            areas.forEach((area) => {
+                set.add(area)
+                enteringAreas[city][area].forEach((includedArea) => {
+                    set.add(includedArea)
+                })
+            })
+            return Array.from(set)
+        } catch (ex) {
+            console.log(`Exception entering of areas: ${ex}`)
+            return areas
+        }
+    }
+
     static generateFilterForProperties(
+        city,
         areas,
+        categories,
         beds,
         minPrice,
         price,
@@ -30,42 +61,27 @@ export default class Database {
         // for arrays as contain or in. Therefore, the search for the number is
         // performed by the string with the number treated with commas
         const propertiesFormula = `NOT(SEARCH(CONCATENATE(",", {Номер} ,","), ',${properties},'))`
+        const areas_ = this.addAreasThatIncludeOther(city, areas)
+        const areaFieldName = city == 'Бали' ? 'Район' : `Район ${city}`
+        console.log(areas_)
         return `
         AND(
             ${properties.length ? propertiesFormula : 'TRUE()'},
             {Модерация},
-            SEARCH({Район}, '${areas}'),
+            SEARCH({${areaFieldName}}, '${areas_}'),
+            SEARCH({Категория}, '${categories}'),
             SEARCH({Количество спален}, '${beds}'),
             {Цена долларов в месяц} >= ${minPrice},
             {Цена долларов в месяц} <= ${price},
-            {Город}='Бали'
+            {Город} = '${city}'
         )
         `
     }
 
-    static async findProperties(areas, beds, minPrice, price, limit = 3) {
-        const airtable = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
-        try {
-            return await airtable
-                .base(process.env.AIRTABLE_BASE_ID)
-                .table(process.env.AIRTABLE_PROPERTIES_TABLE_ID)
-                .select({
-                    filterByFormula: this.generateFilterForProperties(
-                        areas,
-                        beds,
-                        minPrice,
-                        price
-                    ),
-                    maxRecords: limit
-                })
-                .all()
-        } catch (exception) {
-            console.error(`issue detected ...\n${exception}`)
-        }
-    }
-
     static async findNewProperties(
+        city,
         areas,
+        categories,
         beds,
         minPrice,
         price,
@@ -73,19 +89,32 @@ export default class Database {
         limit = 3
     ) {
         const airtable = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY })
+        console.log(
+            this.generateFilterForProperties(
+                city,
+                areas,
+                categories,
+                beds,
+                minPrice,
+                price,
+                properties
+            )
+        )
         try {
             return await airtable
                 .base(process.env.AIRTABLE_BASE_ID)
                 .table(process.env.AIRTABLE_PROPERTIES_TABLE_ID)
                 .select({
                     filterByFormula: this.generateFilterForProperties(
+                        city,
                         areas,
+                        categories,
                         beds,
                         minPrice,
                         price,
                         properties
                     ),
-                    maxRecords: limit
+                    maxRecords: limit,
                 })
                 .all()
         } catch (exception) {

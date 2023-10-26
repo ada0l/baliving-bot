@@ -20,6 +20,16 @@ export class Request {
     @Column({ name: 'user_id', type: 'bigint' })
     userId: number
 
+    @Column({ name: 'city', default: 'Бали' })
+    city: string
+
+    @Column({
+        name: 'categories',
+        type: 'simple-array',
+        default: 'Вилла,Комната,Гестхаус,Апартаменты,Дом',
+    })
+    categories: string
+
     @Column({ name: 'areas', type: 'simple-array', default: null })
     areas: string
 
@@ -43,4 +53,13 @@ export class Request {
 
     @DeleteDateColumn({ name: 'deleted_at' })
     deletedAt: Date
+
+    isFilled() {
+        return (
+            this.areas != null &&
+            this.beds != null &&
+            this.minPrice != null &&
+            this.price != null
+        )
+    }
 }

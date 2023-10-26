@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
-import { BotService } from './providers/bot.service'
+import { BotPollerService } from './providers/bot-poller.service'
+import { BotSenderService } from './providers/bot-sender.service'
 import { UsersService } from './users/users.service'
 import { User } from './users/entities/user.entity'
 import { Request } from './requests/entities/request.entity'
@@ -25,6 +26,12 @@ import { FetchModule } from 'nestjs-fetch'
         }),
         TypeOrmModule.forFeature([User, Request]),
     ],
-    providers: [BotService, UsersService, RequestsService, TasksService],
+    providers: [
+        BotPollerService,
+        UsersService,
+        RequestsService,
+        TasksService,
+        BotSenderService,
+    ],
 })
 export class AppModule {}

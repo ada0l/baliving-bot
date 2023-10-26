@@ -49,4 +49,10 @@ export class User {
 
     @DeleteDateColumn({ name: 'deleted_at' })
     deletedAt: Date
+
+    @Column({ name: 'message_for_delete', type: 'simple-array', default: '' })
+    messageForDelete: number[]
+
+    @Column({ name: 'warningTime', default: null })
+    warningTime: Date
 }
