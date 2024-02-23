@@ -16,6 +16,9 @@ export enum Actions {
     AskCity = 'ask-city',
     ReadCity = 'read-city',
 
+    HaveAlreadyFound = 'have-already-found',
+    ResumeSearch = 'resume-search',
+
     AskCategories = 'ask-categoies',
     ReadCategories = 'read-categoies',
 

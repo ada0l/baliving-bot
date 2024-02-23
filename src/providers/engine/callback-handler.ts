@@ -40,6 +40,10 @@ export default class CallbackHandler {
                 await this.handleAskArea(user)
             } else if (data.includes(Actions.SelectAllAreas)) {
                 await this.handleSelectAllAreas(messageId, user, keyboard)
+            } else if (data.includes(Actions.HaveAlreadyFound)) {
+                await this.handleHaveAlreadyFound(user)
+            } else if (data.includes(Actions.ResumeSearch)) {
+                await this.handleResumeSearch(user)
             } else if (user.nextAction === Actions.ReadCity) {
                 if (data === Actions.Finish) {
                     await this.handleFinishCityMessage(
@@ -132,9 +136,11 @@ export default class CallbackHandler {
                 }
             } else if (user.nextAction === Actions.Confirm) {
                 console.log(data)
-                if (data.includes(Actions.StartSearch)) {
+                if (
+                    data.includes(Actions.StartSearch) ||
+                    data.include(Actions.ResumeSearch)
+                ) {
                     await this.handleSearchMessage(
-                        messageId,
                         user,
                         data.includes(Actions.StartSearchNext),
                         data.includes(Actions.StartSearchNew)
@@ -411,7 +417,7 @@ export default class CallbackHandler {
         }
     }
 
-    async handleSearchMessage(messageId, user, isNext, isNew) {
+    async handleSearchMessage(user, isNext, isNew) {
         await this.botSenderService.deleteMessageForUser(user)
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
@@ -867,5 +873,34 @@ export default class CallbackHandler {
         const request: any = await this.requestsService.find(+user.requestId)
         await this.botSenderService.deleteMessageForUser(user)
         await this.botSenderService.sendAreaKeyboard(user, request)
+    }
+
+    async handleHaveAlreadyFound(user) {
+        await this.usersService.update(user.userId, user.chatId, {
+            enabledNotifications: false,
+        })
+        await this.botSenderService.sendMessage(
+            user.chatId,
+            locales[user.locale].haveAlreadyFoundReply,
+            {
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            {
+                                text: locales[user.locale].resumeSearchButton,
+                                callback_data: Actions.ResumeSearch,
+                            },
+                        ],
+                    ],
+                },
+            }
+        )
+    }
+
+    async handleResumeSearch(user) {
+        await this.usersService.update(user.userId, user.chatId, {
+            enabledNotifications: true,
+        })
+        await this.handleSearchMessage(user, false, false)
     }
 }

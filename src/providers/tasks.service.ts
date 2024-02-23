@@ -38,6 +38,7 @@ export class TasksService {
         const bot = new TelegramBot(process.env.TOKEN)
         this.usersService.find().then((users) => {
             users.forEach((user) => {
+                if (!user.enabledNotifications) return
                 if (user.requestId) {
                     Database.findUser(user.email).then((databaseUser) => {
                         if (
@@ -99,6 +100,12 @@ export class TasksService {
                                                 .showNewAds,
                                             callback_data:
                                                 Actions.StartSearchNew,
+                                        },
+                                        {
+                                            text: locales[user.locale]
+                                                .haveAlreadyFound,
+                                            callback_data:
+                                                Actions.HaveAlreadyFound,
                                         },
                                     ],
                                 ],

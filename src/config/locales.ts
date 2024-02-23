@@ -53,6 +53,10 @@ export default {
         showTheFollowingAds: 'Показать следующие объявления',
         showTheFollowingGeneralAds: 'Показать следующие из общего поиска',
         showNewAds: 'Показать новые объявления',
+        haveAlreadyFound: 'Уже нашел',
+        haveAlreadyFoundReply:
+            'Я больше не буду присылать вам уведомления, о новых объявлениях',
+        resumeSearchButton: 'Возобновить поиск',
         finalMessage:
             'Локация: ${city}\nРайон: ${areas}\nКатегория: ${categories}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
         link: 'Ссылка',
@@ -109,6 +113,10 @@ export default {
         showTheFollowingAds: 'Show the following ads',
         showTheFollowingGeneralAds: 'Show the new ads from general list',
         showNewAds: 'Show new ads',
+        haveAlreadyFound: 'Have already found',
+        haveAlreadyFoundReply:
+            'I will no longer send you notifications about new ads',
+        resumeSearchButton: 'Resume search',
         finalMessage:
             'Location: ${areas}\nNumber of bedrooms: ${beds}\nPrice: ${price}$/month\n\n${link}',
         link: 'Link',
