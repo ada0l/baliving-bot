@@ -136,7 +136,8 @@ export default class CallbackHandler {
                     await this.handleSearchMessage(
                         messageId,
                         user,
-                        data.includes(Actions.StartSearchNext)
+                        data.includes(Actions.StartSearchNext),
+                        data.includes(Actions.StartSearchNew)
                     )
                 }
             } else if (
@@ -410,7 +411,7 @@ export default class CallbackHandler {
         }
     }
 
-    async handleSearchMessage(messageId, user, isNext) {
+    async handleSearchMessage(messageId, user, isNext, isNew) {
         await this.botSenderService.deleteMessageForUser(user)
         await this.usersService.update(user.userId, user.chatId, {
             currentAction: Actions.WaitingForReply,
@@ -422,7 +423,7 @@ export default class CallbackHandler {
         )
         const request: any = await this.requestsService.find(+user.requestId)
         const properties: any = (() => {
-            if (!isNext) {
+            if (!isNext && !isNew) {
                 return []
             }
             return request.properties ?? []
@@ -435,7 +436,13 @@ export default class CallbackHandler {
             request.beds,
             request.minPrice,
             request.price,
-            properties
+            properties,
+            isNew ? 10 : 3,
+            isNew
+                ? request.properties.reduce((a: number, b: number) =>
+                      Math.max(a, b)
+                  )
+                : undefined
         )
         await this.botSenderService.deleteMessage(
             user.userId,
@@ -458,20 +465,21 @@ export default class CallbackHandler {
             }
             await this.requestsService.update(request.id, { properties })
             if (isSent) {
+                const button = isNew
+                    ? {
+                          text: locales[user.locale].showTheFollowingGeneralAds,
+                          callback_data: Actions.StartSearchNext,
+                      }
+                    : {
+                          text: locales[user.locale].showTheFollowingAds,
+                          callback_data: Actions.StartSearchNext,
+                      }
                 await this.botSenderService.sendMessage(
                     user.chatId,
                     locales[user.locale].maybeYouCanFindSomethingElse,
                     {
                         reply_markup: {
-                            inline_keyboard: [
-                                [
-                                    {
-                                        text: locales[user.locale]
-                                            .showTheFollowingAds,
-                                        callback_data: Actions.StartSearchNext,
-                                    },
-                                ],
-                            ],
+                            inline_keyboard: [[button]],
                         },
                     }
                 )
