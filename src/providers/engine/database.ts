@@ -115,6 +115,7 @@ export default class Database {
                         properties
                     ),
                     maxRecords: limit,
+                    sort: [{ field: 'Дата создания', direction: 'desc' }],
                 })
                 .all()
         } catch (exception) {
