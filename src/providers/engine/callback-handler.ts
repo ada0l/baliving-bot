@@ -458,15 +458,20 @@ export default class CallbackHandler {
         if (databaseProperties.length) {
             let isSent: boolean = false
             for (const property of databaseProperties) {
-                if (isValidUrl(property.get('Телеграм ссылка'))) {
-                    const id: any = await this.botSenderService.sendProperty(
-                        property,
-                        user
-                    )
-                    if (id) {
-                        properties.push(id)
-                        isSent = true
+                try {
+                    if (isValidUrl(property.get('Телеграм ссылка'))) {
+                        const id: any =
+                            await this.botSenderService.sendProperty(
+                                property,
+                                user
+                            )
+                        if (id) {
+                            properties.push(id)
+                            isSent = true
+                        }
                     }
+                } catch (ex) {
+                    console.log(`Failed to send propetry: ${ex}`)
                 }
             }
             await this.requestsService.update(request.id, { properties })
@@ -488,6 +493,11 @@ export default class CallbackHandler {
                             inline_keyboard: [[button]],
                         },
                     }
+                )
+            } else {
+                await this.botSenderService.sendMessage(
+                    user.chatId,
+                    locales[user.locale].notFoundOptions
                 )
             }
         } else {
