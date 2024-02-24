@@ -55,7 +55,7 @@ export default {
         showNewAds: 'Показать новые объявления',
         haveAlreadyFound: 'Уже нашел',
         haveAlreadyFoundReply:
-            'Я больше не буду присылать вам уведомления, о новых объявлениях',
+            'Я больше не буду присылать вам уведомления о новых объявлениях',
         resumeSearchButton: 'Возобновить поиск',
         finalMessage:
             'Локация: ${city}\nРайон: ${areas}\nКатегория: ${categories}\nКоличество спален: ${beds}\nЦена: ${price}$/месяц\n\n${link}',
