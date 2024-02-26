@@ -49,25 +49,29 @@ export class TasksService implements OnModuleInit {
         const bot = new TelegramBot(process.env.TOKEN)
         await this.usersService.find().then((users) => {
             users.forEach((user) => {
-                if (!user.enabledNotifications) return
-                if (user.requestId) {
-                    Database.findUser(user.email).then((databaseUser) => {
-                        if (
-                            databaseUser &&
-                            (Database.isUserAccessValid(databaseUser) ||
-                                Database.isTrialUser(databaseUser))
-                        ) {
-                            if (Database.isTrialUser(databaseUser)) {
-                                this.handleActiveUser(bot, user, true)
-                            } else if (Database.isVIPUser(databaseUser)) {
-                                this.handleActiveUser(bot, user)
+                try {
+                    if (!user.enabledNotifications) return
+                    if (user.requestId) {
+                        Database.findUser(user.email).then((databaseUser) => {
+                            if (
+                                databaseUser &&
+                                (Database.isUserAccessValid(databaseUser) ||
+                                    Database.isTrialUser(databaseUser))
+                            ) {
+                                if (Database.isTrialUser(databaseUser)) {
+                                    this.handleActiveUser(bot, user, true)
+                                } else if (Database.isVIPUser(databaseUser)) {
+                                    this.handleActiveUser(bot, user)
+                                } else {
+                                    this.handleUndefinedActiveUser(bot, user)
+                                }
                             } else {
-                                this.handleUndefinedActiveUser(bot, user)
+                                this.handleExpiredUser(bot, user)
                             }
-                        } else {
-                            this.handleExpiredUser(bot, user)
-                        }
-                    })
+                        })
+                    }
+                } catch (ex) {
+                    console.log(`Failed to handle user: ${ex}`)
                 }
             })
         })
