@@ -45,96 +45,91 @@ export class TasksService implements OnModuleInit {
 
     async handleCron() {
         this.schedulerRegistry.getCronJob('sendNewAdsToUsers').stop()
-        console.debug('Checking new properties ...')
-        const bot = new TelegramBot(process.env.TOKEN)
-        await this.usersService.find().then((users) => {
-            users.forEach((user) => {
+        try {
+            console.debug('Checking new properties ...')
+            const bot = new TelegramBot(process.env.TOKEN)
+            const users = await this.usersService.find()
+            for (const user of users) {
                 try {
                     if (!user.enabledNotifications) return
                     if (user.requestId) {
-                        Database.findUser(user.email).then((databaseUser) => {
-                            if (
-                                databaseUser &&
-                                (Database.isUserAccessValid(databaseUser) ||
-                                    Database.isTrialUser(databaseUser))
-                            ) {
-                                if (Database.isTrialUser(databaseUser)) {
-                                    this.handleActiveUser(bot, user, true)
-                                } else if (Database.isVIPUser(databaseUser)) {
-                                    this.handleActiveUser(bot, user)
-                                } else {
-                                    this.handleUndefinedActiveUser(bot, user)
-                                }
+                        const databaseUser = await Database.findUser(user.email)
+                        if (
+                            databaseUser &&
+                            (Database.isUserAccessValid(databaseUser) ||
+                                Database.isTrialUser(databaseUser))
+                        ) {
+                            if (Database.isTrialUser(databaseUser)) {
+                                await this.handleActiveUser(bot, user, true)
+                            } else if (Database.isVIPUser(databaseUser)) {
+                                await this.handleActiveUser(bot, user)
                             } else {
-                                this.handleExpiredUser(bot, user)
+                                await this.handleUndefinedActiveUser(bot, user)
                             }
-                        })
+                        } else {
+                            await this.handleExpiredUser(bot, user)
+                        }
                     }
                 } catch (ex) {
                     console.log(`Failed to handle user: ${ex}`)
                 }
-            })
-        })
+            }
+        } catch (ex) {
+            console.log(ex)
+        }
         console.debug('Checking new properties is ended!')
         this.schedulerRegistry.getCronJob('sendNewAdsToUsers').start()
     }
 
-    handleActiveUser(bot, user, isTrial = false) {
-        this.requestsService.find(+user.requestId).then((request) => {
-            if (request && request.areas && request.beds && request.price) {
-                const properties: any = request.properties
-                    ? request.properties
-                    : []
-                console.debug(properties)
-                Database.findNewProperties(
-                    request.city,
-                    request.areas,
-                    request.categories,
-                    request.beds,
-                    request.minPrice,
-                    request.price,
-                    properties,
-                    10,
-                    properties
-                        .map((property: string) => Number(property))
-                        .reduce((a: number, b: number) => Math.max(a, b))
-                ).then(async (newProperties) => {
-                    newProperties = newProperties.filter((property) =>
-                        isValidUrl(property.get('Телеграм ссылка'))
-                    )
-                    console.log(newProperties.length)
-                    if (newProperties.length == 0) return
+    async handleActiveUser(bot, user, isTrial = false) {
+        const request = await this.requestsService.find(+user.requestId)
+        if (request && request.areas && request.beds && request.price) {
+            const properties: any = request.properties ? request.properties : []
+            console.debug(properties)
+            const newProperties = await Database.findNewProperties(
+                request.city,
+                request.areas,
+                request.categories,
+                request.beds,
+                request.minPrice,
+                request.price,
+                properties,
+                10,
+                properties
+                    .map((property: string) => Number(property))
+                    .reduce((a: number, b: number) => Math.max(a, b))
+            ).then((properties) =>
+                properties.filter((property) =>
+                    isValidUrl(property.get('Телеграм ссылка'))
+                )
+            )
+            console.log(newProperties.length)
+            if (newProperties.length == 0) return
 
-                    await this.botSenderService.sendMessage(
-                        user.chatId,
-                        locales[user.locale].foundOptions,
-                        {
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [
-                                        {
-                                            text: locales[user.locale]
-                                                .showNewAds,
-                                            callback_data:
-                                                Actions.StartSearchNew,
-                                        },
-                                        {
-                                            text: locales[user.locale]
-                                                .haveAlreadyFound,
-                                            callback_data:
-                                                Actions.HaveAlreadyFound,
-                                        },
-                                    ],
-                                ],
-                            },
-                        }
-                    )
-                })
-            }
-        })
+            await this.botSenderService.sendMessage(
+                user.chatId,
+                locales[user.locale].foundOptions,
+                {
+                    reply_markup: {
+                        inline_keyboard: [
+                            [
+                                {
+                                    text: locales[user.locale].showNewAds,
+                                    callback_data: Actions.StartSearchNew,
+                                },
+                                {
+                                    text: locales[user.locale].haveAlreadyFound,
+                                    callback_data: Actions.HaveAlreadyFound,
+                                },
+                            ],
+                        ],
+                    },
+                }
+            )
+        }
     }
 
-    handleUndefinedActiveUser(bot, user) {
+    async handleUndefinedActiveUser(bot, user) {
         const options: any = {
             reply_markup: {
                 inline_keyboard: [
@@ -163,16 +158,16 @@ export class TasksService implements OnModuleInit {
                 ],
             },
         }
-        bot.sendMessage(
-            user.chatId,
-            locales[user.locale].expired,
-            options
-        ).then(() => {
-            this.usersService.delete(user.userId).then((r) => console.debug(r))
-        })
+        await bot
+            .sendMessage(user.chatId, locales[user.locale].expired, options)
+            .then(async () => {
+                await this.usersService
+                    .delete(user.userId)
+                    .then((r) => console.debug(r))
+            })
     }
 
-    handleExpiredUser(bot, user) {
+    async handleExpiredUser(bot, user) {
         const options: any = {
             reply_markup: {
                 inline_keyboard: [
@@ -193,14 +188,12 @@ export class TasksService implements OnModuleInit {
                 ],
             },
         }
-        bot.sendMessage(
-            user.chatId,
-            locales[user.locale].expired,
-            options
-        ).then(() => {
-            this.usersService
-                .delete(user.userId)
-                .then((response) => console.debug(response))
-        })
+        await bot
+            .sendMessage(user.chatId, locales[user.locale].expired, options)
+            .then(async () => {
+                await this.usersService
+                    .delete(user.userId)
+                    .then((response) => console.debug(response))
+            })
     }
 }
