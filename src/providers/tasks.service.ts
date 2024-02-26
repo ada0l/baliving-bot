@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { Cron, CronExpression } from '@nestjs/schedule'
+import { CronExpression, SchedulerRegistry } from '@nestjs/schedule'
+import { CronJob } from 'cron'
 import { UsersService } from '../users/users.service'
 import { RequestsService } from '../requests/requests.service'
 import Database from './engine/database'
@@ -12,12 +13,22 @@ const TelegramBot = require('node-telegram-bot-api')
 require('dotenv').config()
 
 @Injectable()
-export class TasksService {
+export class TasksService implements OnModuleInit {
     constructor(
         private readonly usersService: UsersService,
         private readonly requestsService: RequestsService,
-        private readonly botSenderService: BotSenderService
+        private readonly botSenderService: BotSenderService,
+        private readonly schedulerRegistry: SchedulerRegistry
     ) {}
+
+    onModuleInit() {
+        const job = new CronJob(CronExpression.EVERY_HOUR, async () => {
+            await this.handleCron()
+        })
+
+        this.schedulerRegistry.addCronJob('sendNewAdsToUsers', job)
+        job.start()
+    }
 
     // @Cron(CronExpression.EVERY_10_MINUTES)
     // handleWarning() {
@@ -32,11 +43,11 @@ export class TasksService {
     //     })
     // }
 
-    @Cron(CronExpression.EVERY_HOUR)
-    handleCron() {
+    async handleCron() {
+        this.schedulerRegistry.getCronJob('sendNewAdsToUsers').stop()
         console.debug('Checking new properties ...')
         const bot = new TelegramBot(process.env.TOKEN)
-        this.usersService.find().then((users) => {
+        await this.usersService.find().then((users) => {
             users.forEach((user) => {
                 if (!user.enabledNotifications) return
                 if (user.requestId) {
@@ -60,6 +71,8 @@ export class TasksService {
                 }
             })
         })
+        console.debug('Checking new properties is ended!')
+        this.schedulerRegistry.getCronJob('sendNewAdsToUsers').start()
     }
 
     handleActiveUser(bot, user, isTrial = false) {
