@@ -64,7 +64,7 @@ export class TasksService {
 
     handleActiveUser(bot, user, isTrial = false) {
         this.requestsService.find(+user.requestId).then((request) => {
-            if (request.areas && request.beds && request.price) {
+            if (request && request.areas && request.beds && request.price) {
                 const properties: any = request.properties
                     ? request.properties
                     : []
