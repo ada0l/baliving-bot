@@ -12,6 +12,9 @@ import { Actions } from './engine/actions'
 const TelegramBot = require('node-telegram-bot-api')
 require('dotenv').config()
 
+const waitSeconds = (seconds: number) =>
+    new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+
 @Injectable()
 export class TasksService implements OnModuleInit {
     constructor(
@@ -44,44 +47,56 @@ export class TasksService implements OnModuleInit {
     // }
 
     async handleCron() {
-        this.schedulerRegistry.getCronJob('sendNewAdsToUsers').stop()
         try {
+            this.schedulerRegistry.getCronJob('sendNewAdsToUsers').stop()
             console.debug('Checking new properties ...')
             const bot = new TelegramBot(process.env.TOKEN)
             const users = await this.usersService.find()
             for (const user of users) {
                 try {
-                    if (!user.enabledNotifications) return
-                    if (user.requestId) {
-                        const databaseUser = await Database.findUser(user.email)
-                        if (
-                            databaseUser &&
-                            (Database.isUserAccessValid(databaseUser) ||
-                                Database.isTrialUser(databaseUser))
-                        ) {
-                            if (Database.isTrialUser(databaseUser)) {
-                                await this.handleActiveUser(bot, user, true)
-                            } else if (Database.isVIPUser(databaseUser)) {
-                                await this.handleActiveUser(bot, user)
-                            } else {
-                                await this.handleUndefinedActiveUser(bot, user)
-                            }
-                        } else {
-                            await this.handleExpiredUser(bot, user)
-                        }
-                    }
+                    await Promise.race([
+                        this.handleUser(bot, user),
+                        waitSeconds(10).then(() => {
+                            throw new Error(
+                                `Timeout of handle user #${user.userId}`
+                            )
+                        }),
+                    ])
                 } catch (ex) {
                     console.log(`Failed to handle user: ${ex}`)
                 }
             }
         } catch (ex) {
             console.log(ex)
+        } finally {
+            console.debug('Checking new properties is ended!')
+            this.schedulerRegistry.getCronJob('sendNewAdsToUsers').start()
         }
-        console.debug('Checking new properties is ended!')
-        this.schedulerRegistry.getCronJob('sendNewAdsToUsers').start()
     }
 
-    async handleActiveUser(bot, user, isTrial = false) {
+    async handleUser(bot, user) {
+        if (!user.enabledNotifications) return
+        if (user.requestId) {
+            const databaseUser = await Database.findUser(user.email)
+            if (
+                databaseUser &&
+                (Database.isUserAccessValid(databaseUser) ||
+                    Database.isTrialUser(databaseUser))
+            ) {
+                if (Database.isTrialUser(databaseUser)) {
+                    await this.handleActiveUser(bot, user)
+                } else if (Database.isVIPUser(databaseUser)) {
+                    await this.handleActiveUser(bot, user)
+                } else {
+                    await this.handleUndefinedActiveUser(bot, user)
+                }
+            } else {
+                await this.handleExpiredUser(bot, user)
+            }
+        }
+    }
+
+    async handleActiveUser(bot, user) {
         const request = await this.requestsService.find(+user.requestId)
         if (request && request.areas && request.beds && request.price) {
             const properties: any = request.properties ? request.properties : []
