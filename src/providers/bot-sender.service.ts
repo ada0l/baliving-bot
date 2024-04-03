@@ -209,4 +209,8 @@ export class BotSenderService {
     async editMessageReplyMarkup(...params: Array<any>) {
         return await this.bot.editMessageReplyMarkup(...params)
     }
+
+    async copyMessage(...params: Array<any>) {
+        return await this.bot.copyMessage(...params)
+    }
 }

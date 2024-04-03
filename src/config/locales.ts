@@ -66,6 +66,13 @@ export default {
             Пхукет: 'https://baliving.ru/phuket/katalog?filters653318079=ad_id__eq__${id}',
             Дубай: 'https://baliving.ru/dubai/villa-for-a-month?filters598370973=ad_id__eq__${id}',
         },
+        sendTime: 'Отправьте время. Пример: 2024-04-04 23:00',
+        sendText: 'Отправьте сообщение, которое нужно всем отправить',
+        confirmOrCancel: 'Подтвердите или отмените отправку',
+        iWillSend: 'Хорошо! Я принял',
+        iCanceled: 'Хорошо! Я отменил',
+        confirm: 'Подтвердить',
+        cancel: 'Отменить',
     },
     en: {
         language: '🇺🇸English',
@@ -123,5 +130,12 @@ export default {
         write: 'Write to landlord',
         catalog_url:
             'https://baliving.ru/en/long-term-rentals-housing-in-bali?filters511398389=Popup+personal__find__${id}',
+        sendTime: 'Send time. Example: 2024-04-04 23:00',
+        sendText: 'Send a message',
+        confirmOrCancel: 'Confirm or cancel',
+        confirm: 'Confirm',
+        iWillSend: 'Good! I accepted it!',
+        iCanceled: 'Good! I canceled it!',
+        cancel: 'Cancel',
     },
 }
