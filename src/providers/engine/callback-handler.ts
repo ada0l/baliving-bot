@@ -249,7 +249,7 @@ export class CallbackHandler {
     async handleRemoveJob(chatId, userId, messageId, data, user) {
         const jobId = parseInt(data.split(':').at(1))
         const job = await this.postQueue.getJob(jobId)
-        await job.remove()
+        await job?.remove()
         await this.botSenderService.sendMessage(
             chatId,
             locales[user.locale].iCanceled
