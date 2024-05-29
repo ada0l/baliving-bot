@@ -129,20 +129,20 @@ export class BotSenderService {
         try {
             let options: any = {
                 parse_mode: 'html',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            {
-                                text: locales[user.locale].write,
-                                switch_inline_query: locales[user.locale].write,
-                                url: `https://${property
-                                    .get('Телеграм ссылка')
-                                    .split('//')
-                                    .at(-1)}`,
-                            },
-                        ],
-                    ],
-                },
+                // reply_markup: {
+                //     inline_keyboard: [
+                //         [
+                //             {
+                //                 text: locales[user.locale].write,
+                //                 switch_inline_query: locales[user.locale].write,
+                //                 url: `https://${property
+                //                     .get('Телеграм ссылка')
+                //                     .split('//')
+                //                     .at(-1)}`,
+                //             },
+                //         ],
+                //     ],
+                // },
             }
             const template = Templater.applyProperty(property, user.locale)
             await this.handlePhotos(property, user)
